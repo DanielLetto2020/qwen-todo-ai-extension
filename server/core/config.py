@@ -12,9 +12,55 @@ os.makedirs(os.path.dirname(DATABASE_PATH) if os.path.dirname(DATABASE_PATH) els
 # Путь к workspace (из env — для stdio режима)
 WORKSPACE_PATH = os.environ.get("WORKSPACE_PATH", os.getcwd())
 
+# Определяем дополнительный путь для поиска конфига проекта
+# Если WORKSPACE_PATH установлен Qwen Code, но не указывает на реальный проект,
+# попробуем использовать PROJECT_PATH из env (если установлен) или найдём конфиг динамически
+PROJECT_PATH = os.environ.get("PROJECT_PATH", None)
+
+
+def _find_project_config_path() -> str:
+    """Найти путь к .qwen/todo-ai.json, поднимаясь от текущей директории."""
+    # Сначала пробуем PROJECT_PATH если установлен
+    if PROJECT_PATH:
+        config_path = os.path.join(PROJECT_PATH, ".qwen", "todo-ai.json")
+        if os.path.exists(config_path):
+            return PROJECT_PATH
+
+    # Затем пробуем текущую рабочую директорию процесса
+    cwd = os.getcwd()
+    config_path = os.path.join(cwd, ".qwen", "todo-ai.json")
+    if os.path.exists(config_path):
+        return cwd
+
+    # Поднимаемся на 2 уровня вверх ищем конфиг
+    current = cwd
+    for _ in range(5):
+        config_path = os.path.join(current, ".qwen", "todo-ai.json")
+        if os.path.exists(config_path):
+            return current
+        parent = os.path.dirname(current)
+        if parent == current:  # Достигли корня
+            break
+        current = parent
+
+    return None
+
 
 def get_board_name() -> str:
-    """Определить имя доски: из .qwen/todo-ai.json workspace или дефолт 'main'."""
+    """Определить имя доски: из .qwen/todo-ai.json проекта или дефолт 'main'."""
+    # Сначала ищем конфиг в PROJECT_PATH или текущей директории
+    project_dir = _find_project_config_path()
+    if project_dir:
+        config_path = os.path.join(project_dir, ".qwen", "todo-ai.json")
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+                board = config.get("board", "main")
+                return board if board else "main"
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+    # Fallback: читаем из WORKSPACE_PATH (старое поведение)
     config_path = os.path.join(WORKSPACE_PATH, ".qwen", "todo-ai.json")
     try:
         with open(config_path) as f:

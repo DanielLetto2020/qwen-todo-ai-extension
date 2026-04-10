@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docs — todo-ai-orchestrator</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        code { background: #1E293B; padding: 2px 6px; border-radius: 4px; font-size: 0.875em; }
+        pre { background: #0F172A; padding: 16px; border-radius: 8px; overflow-x: auto; border: 1px solid #1E293B; }
+        pre code { background: none; padding: 0; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-[#0F172A] via-[#162032] to-[#0A0F1A] text-gray-200 min-h-screen">
+    <div class="max-w-4xl mx-auto px-6 py-12">
+        <div class="flex items-center gap-3 mb-8">
+            
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">todo-ai-orchestrator</h1>
+                <p class="text-gray-500 text-sm">Документация v1.0.0</p>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <a href="/" class="text-blue-400 hover:text-blue-300 text-sm">← Назад к Kanban-доске</a>
+        </div>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Быстрый старт</h2>
+            <pre><code>podman compose up -d</code></pre>
+            <p class="text-gray-500 mt-2 text-sm">Доступно на <code class="text-blue-400">http://localhost:8167</code></p>
+            <p class="text-gray-500 text-sm mt-1">Свой порт: <code class="text-blue-400">APP_PORT=9000 podman compose up -d</code></p>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Колонки</h2>
+            <div class="space-y-2">
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg border-l-4 border-[#3B82F6]">
+                    <span class="text-sm font-medium text-gray-300 w-40">0 — Бэклог</span><span class="text-xs text-gray-500">Только человек</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg border-l-4 border-[#8B5CF6]">
+                    <span class="text-sm font-medium text-gray-300 w-40">1 — Бэклог-AI</span><span class="text-xs text-gray-500">Только AI</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg border-l-4 border-[#F59E0B]">
+                    <span class="text-sm font-medium text-gray-300 w-40">2 — Сделать</span><span class="text-xs text-gray-500">Любой</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg border-l-4 border-[#10B981]">
+                    <span class="text-sm font-medium text-gray-300 w-40">3 — В работе</span><span class="text-xs text-gray-500">Любой</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg border-l-4 border-[#EF4444]">
+                    <span class="text-sm font-medium text-gray-300 w-40">4 — Требует внимания</span><span class="text-xs text-gray-500">Любой</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg border-l-4 border-[#06B6D4]">
+                    <span class="text-sm font-medium text-gray-300 w-40">5 — Готово</span><span class="text-xs text-gray-500">Любой</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg border-l-4 border-[#6B7280]">
+                    <span class="text-sm font-medium text-gray-300 w-40">6 — Архив</span><span class="text-xs text-gray-500">Любой</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Схема задачи</h2>
+            <pre><code>{
+  "id": "INTEGER AUTOINCREMENT",
+  "id_task": "INTEGER UNIQUE",
+  "title": "VARCHAR(100)",
+  "description": "TEXT(10000)",
+  "context_ai": "TEXT",
+  "status": "INTEGER (0-6)",
+  "type": "VARCHAR(50) DEFAULT 'base'",
+  "priority": "INTEGER DEFAULT 0",
+  "log": "TEXT (JSON Array)",
+  "ai_notepad": "TEXT",
+  "checklist_title": "TEXT",
+  "created_at": "TIMESTAMP",
+  "updated_at": "TIMESTAMP"
+}</code></pre>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">REST API</h2>
+            <h3 class="text-lg font-semibold text-gray-300 mb-3">Задачи</h3>
+            <div class="space-y-2 mb-6">
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg">
+                    <span class="px-2 py-1 bg-blue-600/20 text-blue-400 text-xs font-mono rounded">GET</span>
+                    <code class="text-sm">/api/tasks?status=2</code>
+                    <span class="text-gray-500 text-sm ml-auto">Список задач</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg">
+                    <span class="px-2 py-1 bg-blue-600/20 text-blue-400 text-xs font-mono rounded">GET</span>
+                    <code class="text-sm">/api/tasks/{id}</code>
+                    <span class="text-gray-500 text-sm ml-auto">Получить задачу</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg">
+                    <span class="px-2 py-1 bg-emerald-600/20 text-emerald-400 text-xs font-mono rounded">POST</span>
+                    <code class="text-sm">/api/tasks</code>
+                    <span class="text-gray-500 text-sm ml-auto">Создать задачу</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg">
+                    <span class="px-2 py-1 bg-yellow-600/20 text-yellow-400 text-xs font-mono rounded">PUT</span>
+                    <code class="text-sm">/api/tasks/{id}</code>
+                    <span class="text-gray-500 text-sm ml-auto">Обновить задачу</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg">
+                    <span class="px-2 py-1 bg-purple-600/20 text-purple-400 text-xs font-mono rounded">PATCH</span>
+                    <code class="text-sm">/api/tasks/{id}/status</code>
+                    <span class="text-gray-500 text-sm ml-auto">Изменить статус</span>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg">
+                    <span class="px-2 py-1 bg-red-600/20 text-red-400 text-xs font-mono rounded">DELETE</span>
+                    <code class="text-sm">/api/tasks/{id}</code>
+                    <span class="text-gray-500 text-sm ml-auto">Удалить задачу</span>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-semibold text-gray-300 mb-3">Доска</h3>
+            <div class="space-y-2 mb-6">
+                <div class="flex items-center gap-3 p-3 bg-[#1E293B]/40 rounded-lg">
+                    <span class="px-2 py-1 bg-blue-600/20 text-blue-400 text-xs font-mono rounded">GET</span>
+                    <span class="text-gray-500 text-sm ml-auto">Доска с колонками и задачами</span>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-semibold text-gray-300 mb-3">Чеклист</h3>
+            <div class="p-4 bg-[#1E293B]/40 rounded-lg mb-6">
+                <p class="text-gray-400 text-sm mb-2">Чеклист хранится как JSON-объект внутри задачи в поле <code class="text-emerald-400">checklist</code>. Доступ через создание/обновление задачи.</p>
+                <pre><code>{
+  "checklist": {
+    "title": "План работ",
+    "tasks": [
+      {
+        "title": "Настроить БД",
+        "done": false,
+        "children": [
+          {"title": "Создать таблицы", "done": true, "children": []}
+        ]
+      }
+    ]
+  }
+}</code></pre>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Правила</h2>
+            <div class="space-y-3">
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <p class="text-sm text-gray-300">1. Только <code>creator=human</code> может создавать задачи в <code class="text-blue-400">status=0</code> (Бэклог)</p>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <p class="text-sm text-gray-300">2. Только <code>creator=ai</code> может создавать задачи в <code class="text-purple-400">status=1</code> (Бэклог-AI)</p>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <p class="text-sm text-gray-300">3. Все изменения автоматически логируются в поле <code>log</code></p>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <p class="text-sm text-gray-300">4. Чеклисты: макс. 5 уровней вложенности (depth 0–4)</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">🛠️ Технологии</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 bg-[#1E293B]/40 rounded-lg"><span class="text-blue-400">Backend:</span> <span class="text-gray-300">Python 3.12 + FastAPI</span></div>
+                <div class="p-3 bg-[#1E293B]/40 rounded-lg"><span class="text-blue-400">Database:</span> <span class="text-gray-300">SQLite (WAL)</span></div>
+                <div class="p-3 bg-[#1E293B]/40 rounded-lg"><span class="text-blue-400">Frontend:</span> <span class="text-gray-300">HTML + Tailwind CSS + JS</span></div>
+                <div class="p-3 bg-[#1E293B]/40 rounded-lg"><span class="text-blue-400">Realtime:</span> <span class="text-gray-300">WebSocket</span></div>
+                <div class="p-3 bg-[#1E293B]/40 rounded-lg"><span class="text-blue-400">Container:</span> <span class="text-gray-300">Podman Compose</span></div>
+                <div class="p-3 bg-[#1E293B]/40 rounded-lg"><span class="text-blue-400">Protocol:</span> <span class="text-gray-300">MCP</span></div>
+            </div>
+        </section>
+
+        <footer class="mt-12 pt-8 border-t border-gray-700/30 text-center text-sm text-gray-600">
+            <p>todo-ai-orchestrator v1.0.0</p>
+        </footer>
+    </div>
+</body>
+</html>

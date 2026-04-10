@@ -1,0 +1,23 @@
+{
+  "name": "todo-ai",
+  "version": "1.0.0",
+  "description": "Kanban-доска с MCP API для AI-агентов. Мультиборды, UI, команды и навыки из коробки.",
+  "mcpServers": {
+    "todo-ai": {
+      "command": "python",
+      "args": ["-m", "server.main"],
+      "cwd": "${extensionPath}",
+      "env": {
+        "DATABASE_URL": "sqlite:///${extensionPath}/data/tasks.db",
+        "WORKSPACE_PATH": "${workspacePath}",
+        "SERVER_MODE": "stdio",
+        "EXTENSION_PATH": "${extensionPath}",
+        "CONFIG_PATH": "${extensionPath}/server/config-app.json"
+      },
+      "timeout": 30000
+    }
+  },
+  "contextFileName": "QWEN.md",
+  "commands": "commands",
+  "skills": "skills"
+}

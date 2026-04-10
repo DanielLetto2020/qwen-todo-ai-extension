@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>todo-ai-orchestrator</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            100: '#1E293B',
+                            200: '#162032',
+                            300: '#0F172A',
+                            400: '#0A0F1A',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+
+        .task-card { cursor: grab; transition: all 0.2s ease; }
+        .task-card:active { cursor: grabbing; }
+        .task-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+
+        .sortable-ghost { opacity: 0.4; transform: scale(0.95); }
+        .sortable-chosen { transform: scale(1.02); box-shadow: 0 15px 35px rgba(0,0,0,0.4); }
+        .sortable-drag { opacity: 0.9; }
+
+        /* Custom checkboxes */
+        .cl-checkbox {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid #475569;
+            border-radius: 3px;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+        .cl-checkbox:checked {
+            background: #10B981;
+            border-color: #10B981;
+        }
+        .cl-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 1px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 1.5px 1.5px 0;
+            transform: rotate(45deg);
+        }
+        .cl-checkbox:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .cl-checkbox:hover:not(:disabled) {
+            border-color: #10B981;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0F172A; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .modal { backdrop-filter: blur(4px); }
+        .json-key { color: #7dd3fc; }
+        .json-string { color: #86efac; }
+        .json-number { color: #fbbf24; }
+        .json-bool { color: #c084fc; }
+        .json-null { color: #9ca3af; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-dark-300 via-dark-200 to-dark-400 text-gray-200 min-h-screen">
+
+    <div class="flex flex-col h-screen overflow-hidden">
+        <!-- Fixed header — 52px -->
+        <div class="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-gray-700/30 bg-dark-300/50 backdrop-blur-sm" style="height:52px;">
+            <!-- LEFT: Logo + Board selector -->
+            <div class="flex items-center gap-4 shrink-0">
+                <h2 class="font-bold text-blue-400 tracking-wider" style="font-family:'Courier New',monospace;font-size:1rem;">TODO_AI</h2>
+
+                <!-- Board selector panel — opens slide-over -->
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-dark-300/60 backdrop-blur-md border border-gray-600/40 rounded-lg cursor-pointer hover:bg-dark-300/80 transition-all" onclick="openBoardPanel()">
+                    <span id="board-selector-display" class="text-xs text-gray-300 font-medium">main</span>
+                    <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+            </div>
+
+            <!-- CENTER: Menu panel -->
+            <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+                <div class="flex items-center gap-0.5 px-3 py-1 bg-dark-300/60 backdrop-blur-md border border-gray-600/40 rounded-lg">
+                    <a href="/notes" class="flex items-center gap-1.5 px-2 py-0.5 text-xs text-gray-400 hover:text-white rounded-md hover:bg-dark-300 transition-all">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Заметки
+                    </a>
+                    <a href="/db" class="flex items-center gap-1.5 px-2 py-0.5 text-xs text-gray-400 hover:text-white rounded-md hover:bg-dark-300 transition-all">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                        DB
+                    </a>
+                </div>
+                <!-- Search -->
+                <div class="relative">
+                    <input type="text" id="task-search" placeholder="Поиск задач..."
+                        class="w-48 px-3 py-1 bg-dark-300/60 backdrop-blur-md border border-gray-600/40 rounded-lg text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:w-64 transition-all"
+                        oninput="onSearchInput()">
+                    <svg id="search-clear" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 hover:text-white cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24" onclick="clearSearch()"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </div>
+            </div>
+
+            <!-- RIGHT: Hidden columns + Docs + GitHub + Version -->
+            <div class="flex items-center gap-4 shrink-0">
+                <!-- Hidden columns panel -->
+                <div id="hidden-columns-bar" class="flex items-center gap-1.5 px-3 py-1.5 bg-dark-300/60 backdrop-blur-md border border-gray-600/40 rounded-lg hidden">
+                </div>
+
+                <!-- Documentation + GitHub + Settings panel -->
+                <div class="flex items-center gap-0.5 px-3 py-1.5 bg-dark-300/60 backdrop-blur-md border border-gray-600/40 rounded-lg">
+                    <a href="/docs-app" class="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-400 hover:text-white rounded-md hover:bg-dark-300 transition-all">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        Документация
+                    </a>
+                    <a href="https://github.com/DanielLetto2020/qwen-todo-ai-extension" target="_blank" class="flex items-center justify-center w-6 h-6 text-gray-500 hover:text-white rounded-md hover:bg-dark-300 transition-all" title="GitHub">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    </a>
+                    <a href="/settings" class="flex items-center justify-center w-6 h-6 text-gray-500 hover:text-white rounded-md hover:bg-dark-300 transition-all" title="Настройки">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </a>
+                </div>
+
+                <!-- Version panel — clickable to changelog, white font -->
+                <a href="/changelog" class="shrink-0 px-3 py-1.5 bg-dark-300/60 backdrop-blur-md border border-gray-600/40 rounded-lg hover:bg-dark-300 transition-all">
+                    <span id="app-version" class="text-[10px] text-white font-mono cursor-pointer"></span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Slide-over Panel: Board Selector -->
+        <div id="board-panel-overlay" class="fixed inset-0 bg-black/60 hidden z-50 transition-opacity duration-300" onclick="closeBoardPanel()"></div>
+        <div id="board-panel" class="fixed inset-y-0 left-0 w-[320px] bg-dark-200 border-r border-gray-600/50 shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+            <div class="flex-shrink-0 flex justify-between items-center px-5 py-4 border-b border-gray-700/30">
+                <h3 class="text-lg font-semibold text-white">Доски</h3>
+                <div class="flex items-center gap-2">
+                    <button id="btn-delete-board-panel" onclick="deleteCurrentBoard()" class="text-gray-500 hover:text-red-400 transition-colors disabled:text-gray-700 disabled:cursor-not-allowed" title="Удалить текущую доску" disabled>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                    <button onclick="closeBoardPanel()" class="text-gray-400 hover:text-white transition-colors text-2xl leading-none">&times;</button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto px-5 py-4">
+                <!-- Board list -->
+                <div id="board-panel-list" class="space-y-1 mb-4"></div>
+                <!-- Divider -->
+                <div class="border-t border-gray-700/30 my-4"></div>
+                <!-- Create new board -->
+                <div class="space-y-2">
+                    <label class="block text-xs text-gray-400 font-medium">Новая доска</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="board-panel-new-name" maxlength="50"
+                            class="flex-1 px-3 py-2 bg-dark-300 border border-gray-600 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            placeholder="my-project"
+                            onkeydown="if(event.key==='Enter')createBoardFromPanel()">
+                        <button onclick="createBoardFromPanel()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 rounded-lg text-sm font-medium transition-all">＋</button>
+                    </div>
+                    <p class="text-[10px] text-gray-600">Только буквы, цифры, дефис и подчёркивание</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scrollable columns -->
+        <div class="flex-1 overflow-x-auto overflow-y-hidden px-6 py-2" style="padding-bottom:8px;">
+            <!-- All hidden placeholder -->
+            <div id="all-hidden-placeholder" class="hidden items-center justify-center h-full text-gray-600 text-sm">
+                Все колонки скрыты
+            </div>
+            <div id="kanban-board" class="flex gap-4 h-full" style="min-width:0;">
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex-shrink-0 flex items-center justify-center border-t border-gray-700/30 bg-dark-300/30" style="height:40px; padding:6px 0; margin-bottom:4px;">
+            <span class="text-[11px] text-gray-600">© 2026 создано DanielLetto с <span class="text-red-500">❤</span></span>
+        </div>
+    </div>
+
+    <!-- Slide-over Panel: Task Detail -->
+    <div id="task-panel-overlay" class="fixed inset-0 bg-black/60 hidden z-50 transition-opacity duration-300" onclick="closeTaskPanel()"></div>
+    <div id="task-panel" class="fixed inset-y-0 right-0 w-[500px] bg-dark-200 border-l border-gray-600/50 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <!-- Panel header with title -->
+        <div class="flex-shrink-0 flex justify-between items-center px-5 py-4 border-b border-gray-700/30">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+                <span id="panel-task-type" class="hidden flex-shrink-0 px-2 py-0.5 text-xs rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30">base</span>
+                <h3 id="panel-task-title" class="text-lg font-semibold text-white truncate cursor-text" ondblclick="startEditTitle(this)" title="Двойной клик для редактирования"></h3>
+            </div>
+            <button onclick="closeTaskPanel()" class="text-gray-400 hover:text-white transition-colors text-2xl leading-none flex-shrink-0 ml-2">&times;</button>
+        </div>
+
+        <!-- Panel body -->
+        <div class="flex-1 overflow-y-auto px-5 py-4">
+            <input type="hidden" id="panel-task-id">
+
+            <!-- Tabs group 1: Details -->
+            <div class="flex items-center gap-0 mb-3 border-b border-gray-700/50 overflow-x-auto">
+                <button onclick="switchTab('description')" data-tab="description"
+                    class="tab-btn px-3 py-2 text-sm font-medium text-gray-400 border-b-2 border-transparent hover:text-white transition-all whitespace-nowrap">
+                    Описание
+                </button>
+                <button onclick="switchTab('context_ai')" data-tab="context_ai"
+                    class="tab-btn px-3 py-2 text-sm font-medium text-gray-400 border-b-2 border-transparent hover:text-white transition-all whitespace-nowrap">
+                    Контекст AI
+                </button>
+                <button onclick="switchTab('checklist')" data-tab="checklist"
+                    class="tab-btn px-3 py-2 text-sm font-medium text-gray-400 border-b-2 border-transparent hover:text-white transition-all whitespace-nowrap">
+                    Список дел
+                </button>
+            </div>
+
+            <!-- Tab content group 1 -->
+            <div id="tab-content-description" class="tab-content">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-sm font-medium text-gray-400">Описание</label>
+                    <button onclick="toggleExpand('description')" class="text-gray-500 hover:text-blue-400 text-lg leading-none" title="Открыть в отдельной панели">↗</button>
+                </div>
+                <textarea id="panel-task-description" maxlength="10000" rows="8"
+                    class="w-full px-3 py-2 bg-dark-300 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white resize-none text-sm"
+                    placeholder="Подробное описание задачи..."></textarea>
+            </div>
+
+            <div id="tab-content-context_ai" class="tab-content hidden">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-sm font-medium text-gray-400">Контекст для AI</label>
+                    <button onclick="toggleExpand('context_ai')" class="text-gray-500 hover:text-blue-400 text-lg leading-none" title="Открыть в отдельной панели">↗</button>
+                </div>
+                <textarea id="panel-task-context-ai" rows="8"
+                    class="w-full px-3 py-2 bg-dark-300 border border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white resize-none text-sm"
+                    placeholder="Стартовый контекст для AI-агента..."></textarea>
+            </div>
+
+            <div id="tab-content-checklist" class="tab-content hidden">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-sm font-medium text-gray-400">Список дел</label>
+                    <div class="flex items-center gap-1">
+                        <button id="btn-add-checklist" onclick="showChecklistTitleInput()" class="text-blue-400 hover:text-blue-300 text-xl leading-none hidden" title="Создать список">＋</button>
+                        <button id="btn-add-checklist-item" onclick="showAddChecklistItemInput(null, null)" class="text-blue-400 hover:text-blue-300 text-xl leading-none hidden" title="Добавить пункт">＋</button>
+                    </div>
+                </div>
+                <div id="checklist-title-display" class="hidden">
+                    <div class="flex items-center justify-between">
+                        <span id="checklist-title-text" class="text-sm text-emerald-400 font-medium"></span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="showChecklistTitleEdit()" class="text-gray-500 hover:text-blue-400 text-lg leading-none" title="Переименовать">✎</button>
+                            <button onclick="deleteChecklist()" class="text-gray-500 hover:text-red-400 text-lg leading-none" title="Удалить список">🗑</button>
+                        </div>
+                    </div>
+                    <div id="checklist-title-edit" class="hidden mt-1">
+                        <input type="text" id="checklist-title-input" maxlength="200"
+                            class="w-full px-2 py-1 bg-dark-300 border border-gray-600 rounded text-sm text-white"
+                            placeholder="Название списка..."
+                            onkeydown="if(event.key==='Enter')saveChecklistTitle()">
+                    </div>
+                </div>
+                <div id="checklist-title-create" class="hidden mb-2">
+                    <input type="text" id="new-checklist-title-input" maxlength="200"
+                        class="w-full px-2 py-1 bg-dark-300 border border-gray-600 rounded text-sm text-white"
+                        placeholder="Название списка..."
+                        onkeydown="if(event.key==='Enter')createChecklist()">
+                    <div class="flex gap-2 mt-1">
+                        <button onclick="createChecklist()" class="text-emerald-400 text-xl hover:text-emerald-300 leading-none">✓</button>
+                        <button onclick="cancelChecklistTitle()" class="text-red-400 text-xl hover:text-red-300 leading-none">✗</button>
+                    </div>
+                </div>
+                <div id="checklist-tree" class="space-y-1"></div>
+            </div>
+
+            <!-- Tabs group 2: Progress -->
+            <div class="flex items-center gap-0 mb-3 border-b border-gray-700/50 overflow-x-auto mt-4">
+                <button onclick="switchTab('ai_notepad')" data-tab="ai_notepad"
+                    class="tab-btn px-3 py-2 text-sm font-medium text-gray-400 border-b-2 border-transparent hover:text-white transition-all whitespace-nowrap">
+                    Заметки AI
+                </button>
+                <button onclick="switchTab('log')" data-tab="log"
+                    class="tab-btn px-3 py-2 text-sm font-medium text-gray-400 border-b-2 border-transparent hover:text-white transition-all whitespace-nowrap">
+                    История задачи
+                </button>
+            </div>
+
+            <!-- Tab content group 2 -->
+            <div id="tab-content-ai_notepad" class="tab-content hidden">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-sm font-medium text-gray-400">Заметки AI</label>
+                    <button onclick="toggleExpand('ai_notepad')" class="text-gray-500 hover:text-blue-400 text-lg leading-none" title="Открыть в отдельной панели">↗</button>
+                </div>
+                <div id="panel-ai-notepad" class="px-3 py-2 bg-dark-300/50 border border-gray-600/50 rounded-lg text-sm min-h-[200px] whitespace-pre-wrap"></div>
+            </div>
+
+            <div id="tab-content-log" class="tab-content hidden">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-sm font-medium text-gray-400">История задачи</label>
+                    <button onclick="toggleExpand('log')" class="text-gray-500 hover:text-blue-400 text-lg leading-none" title="Открыть в отдельной панели">↗</button>
+                </div>
+                <div id="panel-log" class="px-3 py-2 bg-dark-300/50 border border-gray-600/50 rounded-lg text-sm max-h-[400px] overflow-y-auto"></div>
+            </div>
+        </div>
+
+        <!-- Panel footer -->
+        <div class="flex-shrink-0 flex justify-between px-5 py-4 border-t border-gray-700/50">
+            <button type="button" id="btn-panel-delete" onclick="deleteTaskFromPanel()" class="hidden px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors">
+                Удалить
+            </button>
+            <div class="flex gap-3 ml-auto">
+                <button type="button" onclick="closeTaskPanel()" class="px-4 py-2 bg-dark-300 hover:bg-dark-100 text-gray-400 rounded-lg transition-colors">
+                    Закрыть
+                </button>
+                <button type="button" onclick="saveTaskFromPanel()" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 rounded-lg font-medium transition-all">
+                    Сохранить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Slide-over Panel: Expanded Section -->
+    <div id="expanded-panel-overlay" class="fixed inset-0 bg-black/40 hidden z-[55]" onclick="closeExpandedPanel()"></div>
+    <div id="expanded-panel" class="fixed inset-y-0 right-0 w-[500px] bg-dark-200 border-l border-gray-600/50 shadow-2xl z-[60] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="flex-shrink-0 flex justify-between items-center px-5 py-4 border-b border-gray-700/30">
+            <h3 id="expanded-panel-title" class="text-lg font-semibold text-white truncate flex-1 min-w-0"></h3>
+            <button onclick="closeExpandedPanel()" class="text-gray-400 hover:text-white transition-colors text-2xl leading-none flex-shrink-0 ml-2">&times;</button>
+        </div>
+        <div id="expanded-panel-body" class="flex-1 overflow-y-auto px-5 py-4"></div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+    <script>
+        // ─── State ────────────────────────────────────────────────
+        const API_BASE = '/api';
+        let columns = [];
+        let tasks = [];
+        let sortableInstances = {};
+
+        // Сортировка по колонкам: по умолчанию ASC для 0-4, DESC для 5-6
+        const DEFAULT_SORT = { 0: 'asc', 1: 'asc', 2: 'asc', 3: 'asc', 4: 'asc', 5: 'desc', 6: 'desc' };
+        let columnSort = { ...DEFAULT_SORT };
+
+        // Скрытые колонки: { statusCode: { name, color } }
+        let hiddenColumns = {};
+
+        // Пагинация по колонкам: { statusCode: pageNumber }
+        let columnPages = {};
+
+        // Поиск задач
+        let searchQuery = '';
+        let searchTimer = null;
+
+        function onSearchInput() {
+            clearTimeout(searchTimer);
+            const input = document.getElementById('task-search');
+            searchQuery = input.value.trim();
+            // Показать/скрыть кнопку очистки
+            document.getElementById('search-clear').classList.toggle('hidden', !searchQuery);
+            // Debounce 800ms
+            searchTimer = setTimeout(() => renderKanbanBoard(), 800);
+        }
+
+        function clearSearch() {
+            document.getElementById('task-search').value = '';
+            searchQuery = '';
+            document.getElementById('search-clear').classList.add('hidden');
+            renderKanbanBoard();
+        }
+
+        function taskMatchesSearch(task, query) {
+            if (!query) return true;
+            const q = query.toLowerCase();
+            const searchable = [
+                task.title,
+                task.description,
+                task.context_ai,
+                task.ai_notepad,
+                task.type,
+                String(task.id_task),
+                task.checklist_title,
+            ].filter(Boolean).join(' ').toLowerCase();
+            return searchable.includes(q);
+        }
+
+        // ─── Status config ────────────────────────────────────────
+        const STATUS_CONFIG = {
+            0: { name: 'Бэклог', color: '#3B82F6', creator: 'human' },
+            1: { name: 'Бэклог-AI', color: '#8B5CF6', creator: 'ai' },
+            2: { name: 'Сделать', color: '#F59E0B', creator: 'any' },
+            3: { name: 'В работе', color: '#10B981', creator: 'any' },
+            4: { name: 'Требует внимания', color: '#EF4444', creator: 'any' },
+            5: { name: 'Готово', color: '#06B6D4', creator: 'any' },
+            6: { name: 'Архив', color: '#6B7280', creator: 'any' },
+        };
+
+        // ─── SVG Icons ────────────────────────────────────────────
+        const SVG_TRASH = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600 hover:text-red-400 transition-colors cursor-pointer"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+        const SVG_ARROW = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500 group-hover:text-blue-400 transition-colors"><polyline points="9 18 15 12 9 6"/></svg>`;
+        const SVG_SORT_ASC = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7-7 7 7"/></svg>`;
+        const SVG_SORT_DESC = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7 7 7-7"/></svg>`;
+        const SVG_EYE_OFF = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/><path d="M14.12 14.12a3 3 0 11-4.24-4.24"/></svg>`;
+        const SVG_EYE = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+
+        // Переходы между статусами: текущий → следующий
+        const STATUS_NEXT = { 0: 2, 1: 2, 2: 3, 3: 5, 4: 5, 5: 6 };
+
+        // ─── API helpers ──────────────────────────────────────────
+        async function apiGet(endpoint) {
+            const res = await fetch(`${API_BASE}${endpoint}`);
+            if (!res.ok) throw new Error(`GET ${endpoint}: ${res.statusText}`);
+            return res.json();
+        }
+
+        async function apiPost(endpoint, data) {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ detail: res.statusText }));
+                throw new Error(err.detail || res.statusText);
+            }
+            return res.json();
+        }
+
+        async function apiPut(endpoint, data) {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ detail: res.statusText }));
+                throw new Error(err.detail || res.statusText);
+            }
+            return res.json();
+        }
+
+        async function apiPatch(endpoint, data) {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ detail: res.statusText }));
+                throw new Error(err.detail || res.statusText);
+            }
+            return res.json();
+        }
+
+        async function apiDelete(endpoint) {
+            const res = await fetch(`${API_BASE}${endpoint}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(`DELETE ${endpoint}: ${res.statusText}`);
+            return res.json();
+        }
+
+        // ─── Toast notifications ──────────────────────────────────
+        function showToast(message, type = 'success') {
+            const colors = {
+                success: 'bg-emerald-600/90 border-emerald-500',
+                error: 'bg-red-600/90 border-red-500',
+                info: 'bg-blue-600/90 border-blue-500',
+            };
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 ${colors[type]} backdrop-blur-sm border rounded-lg text-sm text-white shadow-lg`;
+            toast.textContent = message;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // ─── Task Panel (slide-over) ─────────────────────────────
+        function openCreateTaskModal() {
+            document.getElementById('panel-task-title').textContent = 'Новая задача';
+            document.getElementById('panel-task-id').value = '';
+            document.getElementById('panel-task-description').value = '';
+            document.getElementById('panel-task-context-ai').value = '';
+            document.getElementById('panel-task-type').classList.add('hidden');
+            document.getElementById('btn-panel-delete').classList.add('hidden');
+            checklistData = { title: '', items: [] };
+            renderChecklist();
+            switchTab('description');
+            openTaskPanel();
+        }
+
+        function openEditTaskModal(task) {
+            document.getElementById('panel-task-title').textContent = task.title;
+            document.getElementById('panel-task-title').dataset.original = task.title;
+
+            const badge = document.getElementById('panel-task-type');
+            badge.textContent = task.type || 'base';
+            badge.classList.remove('hidden');
+
+            document.getElementById('panel-task-id').value = task.api_id;
+            document.getElementById('panel-task-description').value = task.description || '';
+            document.getElementById('panel-task-context-ai').value = task.context_ai || '';
+
+            if (task.ai_notepad) {
+                document.getElementById('panel-ai-notepad').textContent = task.ai_notepad;
+                document.getElementById('panel-ai-notepad').classList.remove('text-gray-600');
+                document.getElementById('panel-ai-notepad').classList.add('text-gray-300');
+            } else {
+                document.getElementById('panel-ai-notepad').textContent = 'Пусто';
+                document.getElementById('panel-ai-notepad').classList.add('text-gray-600');
+                document.getElementById('panel-ai-notepad').classList.remove('text-gray-300');
+            }
+
+            const log = JSON.parse(task.log || '[]');
+            document.getElementById('panel-log').innerHTML = log.map(l => {
+                const statusName = (code) => STATUS_CONFIG[code]?.name || code;
+                let details = l.details || '';
+                if (l.action === 'status_changed') {
+                    details = details.replace(/Статус: (\d+) → (\d+)/, (m, from, to) =>
+                        `Статус: ${statusName(from)} → ${statusName(to)}`
+                    );
+                }
+                return `<div class="mb-2 pb-2 border-b border-gray-700/30 last:border-0">
+                    <span class="text-gray-500 text-xs">${new Date(l.timestamp).toLocaleString('ru')}</span>
+                    <span class="text-emerald-400 text-xs ml-2">[${l.action}]</span>
+                    <span class="text-gray-300 ml-2">${details}</span>
+                </div>`;
+            }).join('');
+
+            if (!log.length) {
+                document.getElementById('panel-log').innerHTML = '<span class="text-gray-600 text-sm">Пусто</span>';
+            }
+
+            document.getElementById('btn-panel-delete').classList.remove('hidden');
+            openTaskPanel();
+            loadChecklist(task.api_id);
+            switchTab('description');
+        }
+
+        function openTaskPanel() {
+            document.getElementById('task-panel-overlay').classList.remove('hidden');
+            document.getElementById('task-panel').classList.remove('translate-x-full');
+            document.getElementById('task-panel').classList.add('translate-x-0');
+        }
+
+        function closeTaskPanel() {
+            document.getElementById('task-panel').classList.remove('translate-x-0');
+            document.getElementById('task-panel').classList.add('translate-x-full');
+            document.getElementById('task-panel-overlay').classList.add('hidden');
+        }
+
+        async function saveTaskFromPanel() {
+            const taskId = document.getElementById('panel-task-id').value;
+            const title = document.getElementById('panel-task-title').textContent.trim();
+            if (!title) { showToast('Заголовок не может быть пустым', 'error'); return; }
+            const data = {
+                title: title,
+                description: document.getElementById('panel-task-description').value,
+                context_ai: document.getElementById('panel-task-context-ai').value,
+                type: 'base',
+                creator: 'human',
+            };
+
+            try {
+                if (taskId) {
+                    await apiPut(`/tasks/${taskId}`, data);
+                    showToast('Задача обновлена', 'success');
+                } else {
+                    data.status = 0;
+                    await apiPost('/tasks', data);
+                    showToast('Задача создана', 'success');
+                }
+                closeTaskPanel();
+                await loadBoard();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteTaskFromPanel() {
+            const taskId = document.getElementById('panel-task-id').value;
+            if (!taskId) return;
+
+            const task = tasks.find(t => t.api_id === parseInt(taskId));
+            if (task && task.status === 6) {
+                if (!confirm('Удалить задачу навсегда?')) return;
+                await apiDelete(`/tasks/${taskId}`);
+                showToast('Задача удалена навсегда', 'info');
+            } else {
+                if (!confirm('Переместить задачу в архив?')) return;
+                await apiPatch(`/tasks/${taskId}/status`, { status: 6, creator: 'human' });
+                showToast('Задача перемещена в архив', 'info');
+            }
+            closeTaskPanel();
+            await loadBoard();
+        }
+
+        // ─── Column pagination ─────────────────────────────────
+        function changeColumnPage(statusCode, delta) {
+            if (!columnPages[statusCode]) columnPages[statusCode] = 0;
+            columnPages[statusCode] = Math.max(0, columnPages[statusCode] + delta);
+            renderKanbanBoard();
+        }
+
+        // ─── Column sort toggle ─────────────────────────────────
+        function toggleColumnSort(statusCode) {
+            const current = columnSort[statusCode] || DEFAULT_SORT[statusCode] || 'asc';
+            columnSort[statusCode] = current === 'asc' ? 'desc' : 'asc';
+            renderKanbanBoard();
+        }
+
+        // ─── Column visibility ──────────────────────────────────
+        function hideColumn(statusCode, name, color) {
+            hiddenColumns[statusCode] = { name, color };
+            renderKanbanBoard();
+        }
+
+        function showColumn(statusCode) {
+            delete hiddenColumns[statusCode];
+            renderKanbanBoard();
+        }
+
+        // ─── Board management (slide-over panel) ─────────────────
+        let currentBoard = 'main';
+        let boardsList = [];
+
+        function openBoardPanel() {
+            document.getElementById('board-panel-overlay').classList.remove('hidden');
+            document.getElementById('board-panel').classList.remove('-translate-x-full');
+            document.getElementById('board-panel').classList.add('translate-x-0');
+            loadBoards();
+        }
+
+        function closeBoardPanel() {
+            document.getElementById('board-panel').classList.remove('translate-x-0');
+            document.getElementById('board-panel').classList.add('-translate-x-full');
+            document.getElementById('board-panel-overlay').classList.add('hidden');
+        }
+
+        async function loadBoards() {
+            try {
+                const res = await fetch(`${API_BASE}/boards`);
+                if (!res.ok) return;
+                const data = await res.json();
+                boardsList = data.boards;
+                currentBoard = data.active;
+                document.getElementById('board-selector-display').textContent = currentBoard;
+
+                // Update delete button: disabled if only 1 board or current is "main"
+                const btn = document.getElementById('btn-delete-board-panel');
+                btn.disabled = boardsList.length <= 1 || currentBoard === 'main';
+
+                // Render panel list
+                const list = document.getElementById('board-panel-list');
+                list.innerHTML = '';
+                data.boards.forEach(b => {
+                    const item = document.createElement('div');
+                    const isActive = b.is_active;
+                    const disabled = b.name === 'main';
+                    const btnClass = disabled ? 'text-gray-700 cursor-not-allowed' : 'text-gray-600 hover:text-blue-400 transition-colors';
+                    const delClass = disabled ? 'text-gray-700 cursor-not-allowed' : 'text-gray-600 hover:text-red-400 transition-colors';
+                    item.className = `flex items-center justify-between px-3 py-2.5 rounded-lg transition-all ${isActive ? 'bg-blue-500/10 border border-blue-500/30' : 'hover:bg-dark-300 text-gray-300 border border-transparent'}`;
+                    item.innerHTML = `
+                        <div class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer" onclick="switchBoard('${b.name}')">
+                            <svg class="w-3.5 h-3.5 ${isActive ? 'text-blue-400' : 'text-gray-600'} shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            <span class="text-sm font-medium truncate">${escapeHtml(b.name)}</span>
+                            <span class="text-[10px] text-gray-600 shrink-0">${b.task_count}</span>
+                        </div>
+                        <div class="flex items-center gap-0.5 shrink-0 ml-2">
+                            <button onclick="event.stopPropagation(); renameBoard('${b.name}')" class="${btnClass} p-0.5" title="Переименовать" ${disabled ? 'disabled' : ''}>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            <button onclick="event.stopPropagation(); deleteBoardByName('${b.name}')" class="${delClass} p-0.5" title="Удалить" ${disabled ? 'disabled' : ''}>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (e) {
+                console.warn('Load boards error:', e);
+            }
+        }
+
+        async function switchBoard(boardName) {
+            if (!boardName || boardName === currentBoard) return;
+            try {
+                await apiPut('/boards/active', { board: boardName });
+                currentBoard = boardName;
+                document.getElementById('board-selector-display').textContent = currentBoard;
+                columnPages = {};
+                hiddenColumns = {};
+                await loadBoard();
+                closeBoardPanel();
+                showToast(`Доска: ${boardName}`, 'info');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function createBoardFromPanel() {
+            const name = document.getElementById('board-panel-new-name').value.trim();
+            if (!name) return;
+            try {
+                await apiPost('/boards', { name: name });
+                document.getElementById('board-panel-new-name').value = '';
+                await loadBoards();
+                await loadBoard();
+                showToast(`Доска '${name}' создана`, 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteBoardByName(name) {
+            if (!confirm(`Удалить доску '${name}' и все её задачи?`)) return;
+            try {
+                await apiDelete(`/boards/${name}`);
+                showToast(`Доска '${name}' удалена`, 'info');
+                await loadBoards();
+                await loadBoard();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function renameBoard(oldName) {
+            const newName = prompt(`Переименовать доску '${oldName}':`, oldName);
+            if (!newName || newName === oldName || !newName.trim()) return;
+            showToast('Переименование пока не поддерживается — создайте новую доску', 'info');
+        }
+
+        // Legacy delete for button in header (disabled for main)
+        async function deleteCurrentBoard() {
+            if (currentBoard === 'main') {
+                showToast('Доску main нельзя удалить', 'error');
+                return;
+            }
+            if (boardsList.length <= 1) {
+                showToast('Нельзя удалить единственную доску', 'error');
+                return;
+            }
+            if (!confirm(`Удалить доску '${currentBoard}' и все её задачи?`)) return;
+            try {
+                await apiDelete(`/boards/${currentBoard}`);
+                showToast(`Доска '${currentBoard}' удалена`, 'info');
+                await loadBoards();
+                await loadBoard();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // ─── Load data ────────────────────────────────────────────
+        async function loadBoard() {
+            const board = await apiGet('/board');
+            columns = board.columns || getDefaultColumns();
+            tasks = board.tasks || [];
+            columnPages = {};
+
+            renderKanbanBoard();
+        }
+
+        function getDefaultColumns() {
+            return Object.entries(STATUS_CONFIG).map(([code, config]) => ({
+                status_code: parseInt(code),
+                name: config.name,
+                color: config.color,
+            }));
+        }
+
+        // ─── Render Kanban board ──────────────────────────────────
+        function renderKanbanBoard() {
+            const container = document.getElementById('kanban-board');
+            const hiddenBar = document.getElementById('hidden-columns-bar');
+            container.innerHTML = '';
+
+            // Render hidden columns bar in header
+            const hiddenKeys = Object.keys(hiddenColumns);
+            if (hiddenKeys.length > 0) {
+                hiddenBar.classList.remove('hidden');
+                hiddenBar.innerHTML = hiddenKeys.map(code => {
+                    const h = hiddenColumns[code];
+                    return `<button onclick="showColumn(${code})" class="inline-flex items-center gap-1 px-2 py-0.5 bg-dark-200/80 border border-gray-600/30 border-t-2 rounded text-[10px] text-gray-400 hover:text-gray-200 transition-all shrink-0" style="border-top-color:${h.color}">
+                        ${SVG_EYE} <span>${escapeHtml(h.name)}</span>
+                    </button>`;
+                }).join('');
+            } else {
+                hiddenBar.classList.add('hidden');
+            }
+
+            // Filter out hidden columns
+            const visibleColumns = columns.filter(c => !hiddenColumns[c.status_code]);
+
+            // Show "all hidden" placeholder
+            const allHidden = document.getElementById('all-hidden-placeholder');
+            if (visibleColumns.length === 0) {
+                allHidden.classList.remove('hidden');
+                allHidden.classList.add('flex');
+                container.classList.add('hidden');
+            } else {
+                allHidden.classList.add('hidden');
+                allHidden.classList.remove('flex');
+                container.classList.remove('hidden');
+            }
+
+            visibleColumns.forEach(col => {
+                let statusTasks = tasks.filter(t => t.status === col.status_code && taskMatchesSearch(t, searchQuery));
+                const dir = columnSort[col.status_code] || 'asc';
+                statusTasks.sort((a, b) => {
+                    return dir === 'asc'
+                        ? new Date(a.created_at) - new Date(b.created_at)
+                        : new Date(b.created_at) - new Date(a.created_at);
+                });
+                const isBacklog = col.status_code === 0;
+                const sortIcon = dir === 'asc' ? SVG_SORT_ASC : SVG_SORT_DESC;
+                const sortTitle = dir === 'asc' ? 'Сейчас: старые ↑ — клик для обратного' : 'Сейчас: новые ↑ — клик для обратного';
+
+                // Пагинация для всех колонок — по 10 задач
+                const PAGE_SIZE = 10;
+                const colPageKey = col.status_code;
+                if (!columnPages[colPageKey]) columnPages[colPageKey] = 0;
+                let pagination = '';
+                let displayTasks = statusTasks;
+                if (statusTasks.length > PAGE_SIZE) {
+                    const totalPages = Math.ceil(statusTasks.length / PAGE_SIZE);
+                    if (columnPages[colPageKey] >= totalPages) columnPages[colPageKey] = totalPages - 1;
+                    const start = columnPages[colPageKey] * PAGE_SIZE;
+                    displayTasks = statusTasks.slice(start, start + PAGE_SIZE);
+                    pagination = `
+                        <div class="flex items-center justify-center gap-4 px-3 py-2 text-xs shrink-0 rounded-t-xl border-t bg-dark-300/40" style="border-top-color: ${col.color}; border-top-width: 2px;">
+                            <button onclick="changeColumnPage(${col.status_code}, -1)" ${columnPages[colPageKey] === 0 ? 'disabled class="text-gray-700 cursor-not-allowed"' : 'class="text-blue-400 hover:text-blue-300"'}>
+                                ← Назад
+                            </button>
+                            <span class="text-gray-500">${columnPages[colPageKey] + 1} / ${totalPages}</span>
+                            <button onclick="changeColumnPage(${col.status_code}, 1)" ${columnPages[colPageKey] >= totalPages - 1 ? 'disabled class="text-gray-700 cursor-not-allowed"' : 'class="text-blue-400 hover:text-blue-300"'}>
+                                Вперёд →
+                            </button>
+                        </div>
+                    `;
+                }
+
+                const colHtml = `
+                    <div class="flex-1 min-w-[260px] max-w-[400px] bg-dark-200/60 backdrop-blur-sm rounded-xl flex flex-col max-h-full"
+                         style="border-top: 3px solid ${col.color}; border-bottom: 1px solid ${col.color};" data-col-status="${col.status_code}">
+                        <div class="p-3 border-b border-gray-700/30 flex items-center justify-between shrink-0">
+                            <div>
+                                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">${col.name}</h3>
+                                <span class="text-[10px] text-gray-600">${statusTasks.length} задач</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="toggleColumnSort(${col.status_code})" class="text-gray-500 hover:text-blue-400 transition-colors" title="${sortTitle}">
+                                    ${sortIcon}
+                                </button>
+                                <button onclick="hideColumn(${col.status_code}, '${col.name.replace(/'/g, "\\'")}', '${col.color}')" class="text-gray-600 hover:text-gray-300 transition-colors" title="Скрыть колонку">
+                                    ${SVG_EYE_OFF}
+                                </button>
+                                ${isBacklog ? `<button onclick="openCreateTaskModal()" class="text-gray-500 hover:text-emerald-400 transition-colors text-lg leading-none" title="Новая задача">＋</button>` : ''}
+                            </div>
+                        </div>
+                        <div class="task-list flex-1 overflow-y-auto p-2 space-y-2 min-h-0" data-status="${col.status_code}">
+                            ${displayTasks.map(task => renderTaskCard(task)).join('')}
+                            ${displayTasks.length === 0 ? '<div class="text-center text-gray-700 text-xs py-8">Пусто</div>' : ''}
+                        </div>
+                        ${pagination}
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', colHtml);
+            });
+
+            initSortable();
+
+            // Load checklist counts for cards with checklist_title
+            const tasksWithChecklist = tasks.filter(t => t.checklist_title);
+            tasksWithChecklist.forEach(task => {
+                fetchChecklistForCard(task.api_id);
+            });
+        }
+
+        async function fetchChecklistForCard(taskId) {
+            try {
+                const res = await fetch(`${API_BASE}/tasks/${taskId}/checklist`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.items || data.items.length === 0) return;
+
+                let done = 0;
+                let total = 0;
+                function countItems(items) {
+                    for (const item of items) {
+                        total++;
+                        if (item.done) done++;
+                        if (item.children && item.children.length > 0) countItems(item.children);
+                    }
+                }
+                countItems(data.items);
+
+                const el = document.getElementById(`checklist-preview-${taskId}`);
+                if (el) {
+                    el.innerHTML = `${escapeHtml(data.checklist_title)} <span class="text-gray-400">${done}/${total}</span>`;
+                }
+            } catch (e) {
+                // silently ignore
+            }
+        }
+
+        function renderTaskCard(task) {
+            const typeColors = {
+                base: 'from-blue-500/10 to-emerald-500/10 border-blue-500/20',
+            };
+            const gradientClass = typeColors[task.type] || typeColors.base;
+
+            // Checklist info
+            let checklistInfo = '';
+            if (task.checklist_title) {
+                checklistInfo = `<div class="text-xs text-gray-500 mt-1 truncate" id="checklist-preview-${task.api_id}">
+                    ${escapeHtml(task.checklist_title)} <span class="text-gray-600">—</span>
+                </div>`;
+            }
+
+            const createdDate = task.created_at ? new Date(task.created_at).toLocaleString('ru', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            const nextStatus = STATUS_NEXT[task.status];
+            const nextName = nextStatus ? STATUS_CONFIG[nextStatus]?.name : '';
+            const arrowBtn = nextStatus ? `
+                <span onclick="event.stopPropagation(); moveTaskForward(${task.api_id}, ${nextStatus})"
+                    class="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-dark-300/80 transition-colors flex-shrink-0"
+                    title="→ ${nextName}">
+                    ${SVG_ARROW}
+                </span>
+            ` : '';
+
+            return `
+                <div class="task-card bg-gradient-to-br ${gradientClass} border rounded-lg p-2.5 group relative cursor-pointer"
+                     data-task-id="${task.api_id}"
+                     onclick="openEditTaskModal(${JSON.stringify(task).replace(/"/g, '&quot;')})">
+                    <div class="flex items-start justify-between mb-1.5">
+                        <div class="flex items-center gap-1 flex-wrap">
+                            <span class="text-[9px] text-gray-500 px-1 py-0.5 bg-dark-300/50 rounded">${task.type || 'base'}</span>
+                            <span class="text-[9px] text-gray-500 px-1 py-0.5 bg-dark-300/50 rounded">#${task.id_task}</span>
+                            ${createdDate ? `<span class="text-[9px] text-gray-600 px-1 py-0.5 bg-dark-300/50 rounded">${createdDate}</span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-0.5 flex-shrink-0">
+                            ${arrowBtn}
+                            <span onclick="event.stopPropagation(); deleteTaskFromCard(${task.api_id})" class="inline-flex items-center justify-center w-4 h-4 rounded hover:bg-dark-300/80 transition-colors flex-shrink-0" title="${task.status === 6 ? 'Удалить навсегда' : 'В архив'}">
+                                ${SVG_TRASH}
+                            </span>
+                        </div>
+                    </div>
+                    <h4 class="text-xs font-medium text-gray-200 mb-1 line-clamp-2">${escapeHtml(task.title)}</h4>
+                    ${task.context_ai ? '<div class="text-[9px] text-emerald-400/70">AI контекст</div>' : ''}
+                    ${checklistInfo}
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ─── Task operations ──────────────────────────────────────
+        async function moveTaskForward(taskId, nextStatus) {
+            const task = tasks.find(t => t.api_id === taskId);
+            if (!task) return;
+            try {
+                await apiPatch(`/tasks/${taskId}/status`, { status: nextStatus, creator: 'human' });
+                showToast(`→ ${STATUS_CONFIG[nextStatus].name}`, 'success');
+                await loadBoard();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteTaskFromCard(taskId) {
+            const task = tasks.find(t => t.api_id === taskId);
+            if (!task) return;
+
+            if (task.status === 6) {
+                if (!confirm('Удалить задачу навсегда?')) return;
+                try {
+                    await apiDelete(`/tasks/${taskId}`);
+                    showToast('Задача удалена навсегда', 'info');
+                    await loadBoard();
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            } else {
+                try {
+                    await apiPatch(`/tasks/${taskId}/status`, { status: 6, creator: 'human' });
+                    showToast('Задача перемещена в архив', 'info');
+                    await loadBoard();
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }
+        }
+
+        // ─── SortableJS drag-and-drop ─────────────────────────────
+        function initSortable() {
+            Object.values(sortableInstances).forEach(s => s.destroy());
+            sortableInstances = {};
+
+            document.querySelectorAll('.task-list').forEach(list => {
+                const status = parseInt(list.dataset.status);
+                sortableInstances[status] = new Sortable(list, {
+                    group: 'kanban',
+                    animation: 200,
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+                    easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+                    onEnd: async function (evt) {
+                        const fromStatus = parseInt(evt.from.dataset.status);
+                        const toStatus = parseInt(evt.to.dataset.status);
+
+                        if (fromStatus !== toStatus) {
+                            const taskId = parseInt(evt.item.dataset.taskId);
+                            try {
+                                await apiPatch(`/tasks/${taskId}/status`, {
+                                    status: toStatus,
+                                    creator: 'human'
+                                });
+                                showToast(`Задача перемещена в "${STATUS_CONFIG[toStatus].name}"`, 'success');
+                                await loadBoard();
+                            } catch (err) {
+                                showToast(err.message, 'error');
+                                await loadBoard();
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        // ─── Tab switching ──────────────────────────────────────
+        let activeTab = 'description';
+
+        function switchTab(tabName) {
+            activeTab = tabName;
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.remove('text-gray-400', 'border-transparent');
+                    btn.classList.add('text-white', 'border-blue-500');
+                } else {
+                    btn.classList.add('text-gray-400', 'border-transparent');
+                    btn.classList.remove('text-white', 'border-blue-500');
+                }
+            });
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const contentEl = document.getElementById(`tab-content-${tabName}`);
+            if (contentEl) contentEl.classList.remove('hidden');
+        }
+
+        // ─── Title inline editing ────────────────────────────────
+        function startEditTitle(el) {
+            const original = el.textContent;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = original;
+            input.maxLength = 100;
+            input.className = 'w-full px-2 py-1 bg-dark-300 border border-blue-500 rounded text-lg font-semibold text-white';
+
+            const save = () => {
+                const val = input.value.trim() || original;
+                el.textContent = val;
+                el.classList.remove('hidden');
+                input.remove();
+            };
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') save();
+                if (e.key === 'Escape') { el.textContent = original; input.remove(); }
+            });
+            input.addEventListener('blur', save);
+
+            el.classList.add('hidden');
+            el.parentNode.insertBefore(input, el.nextSibling);
+            input.focus();
+            input.select();
+        }
+
+        // ─── Expanded Section Panel (Accordion) ──────────────────
+        let currentExpandedSection = null;
+
+        const EXPAND_CONFIG = {
+            'description': { label: 'Описание', field: 'panel-task-description', type: 'textarea' },
+            'context_ai': { label: 'Контекст для AI', field: 'panel-task-context-ai', type: 'textarea' },
+            'ai_notepad': { label: 'Заметки AI', field: 'panel-ai-notepad', type: 'text' },
+            'log': { label: 'История', field: 'panel-log', type: 'html' },
+        };
+
+        function toggleExpand(section) {
+            const cfg = EXPAND_CONFIG[section];
+            if (!cfg) return;
+
+            // If same section clicked — close it
+            if (currentExpandedSection === section) {
+                closeExpandedPanel();
+                return;
+            }
+
+            // Close any existing expanded panel
+            closeExpandedPanel();
+
+            const srcEl = document.getElementById(cfg.field);
+            if (!srcEl) return;
+
+            currentExpandedSection = section;
+            document.getElementById('expanded-panel-title').textContent = cfg.label;
+
+            const body = document.getElementById('expanded-panel-body');
+            if (cfg.type === 'textarea') {
+                body.innerHTML = `<textarea class="w-full h-full min-h-[300px] px-3 py-2 bg-dark-300 border border-gray-600 rounded-lg text-sm text-white resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    style="min-height:calc(100vh - 120px)">${escapeHtml(srcEl.value)}</textarea>`;
+                // Sync back on change
+                body.querySelector('textarea').addEventListener('input', function() {
+                    srcEl.value = this.value;
+                });
+            } else if (cfg.type === 'text') {
+                const content = srcEl.textContent || 'Пусто';
+                const isPlaceholder = content === 'Пусто';
+                body.innerHTML = `<div class="px-3 py-2 bg-dark-300/50 border border-gray-600/50 rounded-lg text-sm whitespace-pre-wrap min-h-[200px] ${isPlaceholder ? 'text-gray-600' : 'text-gray-300'}">${escapeHtml(content)}</div>`;
+            } else if (cfg.type === 'html') {
+                body.innerHTML = `<div class="px-3 py-2 bg-dark-300/50 border border-gray-600/50 rounded-lg text-sm text-gray-400 overflow-y-auto min-h-[200px]">${srcEl.innerHTML}</div>`;
+            }
+
+            // Open panel
+            document.getElementById('expanded-panel-overlay').classList.remove('hidden');
+            document.getElementById('expanded-panel').classList.remove('translate-x-full');
+            document.getElementById('expanded-panel').classList.add('translate-x-0');
+        }
+
+        function closeExpandedPanel() {
+            currentExpandedSection = null;
+            document.getElementById('expanded-panel').classList.remove('translate-x-0');
+            document.getElementById('expanded-panel').classList.add('translate-x-full');
+            document.getElementById('expanded-panel-overlay').classList.add('hidden');
+            document.getElementById('expanded-panel-body').innerHTML = '';
+        }
+
+        // ─── WebSocket ────────────────────────────────────────────
+        let ws = null;
+        let wsReconnectDelay = 1000;
+
+        function connectWebSocket() {
+            const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+            ws = new WebSocket(`${protocol}://${location.host}/ws`);
+
+            ws.onopen = () => {
+                console.log('WebSocket подключён');
+                wsReconnectDelay = 1000;
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'task_change') {
+                        console.log('WebSocket: task_change', msg.action);
+                        loadBoard(); // Автообновление доски
+                        const actionNames = {
+                            'status_changed': 'Статус задачи изменён',
+                            'task_created': 'Создана новая задача',
+                            'task_deleted': 'Задача удалена',
+                        };
+                        showToast(actionNames[msg.action] || 'Задача обновлена', 'info');
+                    }
+                } catch (e) {
+                    console.warn('WebSocket parse error:', e);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket отключён, переподключение через', wsReconnectDelay / 1000, 'с');
+                setTimeout(connectWebSocket, wsReconnectDelay);
+                wsReconnectDelay = Math.min(wsReconnectDelay * 2, 30000);
+            };
+
+            ws.onerror = () => ws.close();
+        }
+
+        // ─── Checklist ────────────────────────────────────────────
+        let checklistTaskId = null;
+        let checklistData = { title: '', items: [] };
+
+        async function loadChecklist(taskId) {
+            checklistTaskId = taskId;
+            try {
+                const res = await fetch(`${API_BASE}/tasks/${taskId}/checklist`);
+                if (!res.ok) return;
+                checklistData = await res.json();
+                renderChecklist();
+            } catch (e) {
+                console.warn('Checklist load error:', e);
+            }
+        }
+
+        function renderChecklist() {
+            const titleDisplay = document.getElementById('checklist-title-display');
+            const titleText = document.getElementById('checklist-title-text');
+            const btnCreate = document.getElementById('btn-add-checklist');
+            const btnAddItem = document.getElementById('btn-add-checklist-item');
+            const tree = document.getElementById('checklist-tree');
+
+            if (checklistData.checklist_title) {
+                titleDisplay.classList.remove('hidden');
+                titleText.textContent = checklistData.checklist_title;
+                btnCreate.classList.add('hidden');
+                btnAddItem.classList.remove('hidden');
+            } else {
+                titleDisplay.classList.add('hidden');
+                btnCreate.classList.remove('hidden');
+                btnAddItem.classList.add('hidden');
+            }
+
+            tree.innerHTML = '';
+            if (checklistData.items && checklistData.items.length > 0) {
+                checklistData.items.forEach(item => {
+                    tree.appendChild(renderChecklistItem(item));
+                });
+            }
+        }
+
+        function allChildrenDone(item) {
+            if (!item.children || item.children.length === 0) return true;
+            return item.children.every(c => c.done && allChildrenDone(c));
+        }
+
+        function renderChecklistItem(item) {
+            const div = document.createElement('div');
+            div.className = 'checklist-item';
+            div.dataset.id = item.id;
+            div.dataset.depth = item.depth;
+
+            const indent = item.depth * 20;
+            const maxDepth = item.depth < 4;
+            const childrenDone = allChildrenDone(item);
+            const canCheck = childrenDone;
+
+            div.innerHTML = `
+                <div class="flex items-center gap-1.5 group" style="padding-left:${indent}px">
+                    <input type="checkbox" ${item.done ? 'checked' : ''}
+                        ${!canCheck ? 'disabled' : ''}
+                        onchange="toggleChecklistItem(${item.id}, this.checked)"
+                        class="cl-checkbox"
+                        title="${!canCheck ? 'Сначала отметьте все подпункты' : ''}">
+                    <span class="flex-1 text-sm ${item.done ? 'line-through text-gray-500' : 'text-gray-200'}">${escapeHtml(item.title)}</span>
+                    ${maxDepth ? `<button onclick="showAddChecklistItemInput(${item.id}, this)" class="text-gray-500 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity text-lg leading-none" title="Добавить подпункт">＋</button>` : ''}
+                    <button onclick="deleteChecklistItem(${item.id})" class="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-lg leading-none" title="Удалить">✗</button>
+                </div>
+            `;
+
+            if (item.children && item.children.length > 0) {
+                const childrenDiv = document.createElement('div');
+                item.children.forEach(child => {
+                    childrenDiv.appendChild(renderChecklistItem(child));
+                });
+                div.appendChild(childrenDiv);
+            }
+
+            return div;
+        }
+
+        function showChecklistTitleInput() {
+            document.getElementById('checklist-title-create').classList.remove('hidden');
+            document.getElementById('btn-add-checklist').classList.add('hidden');
+            document.getElementById('new-checklist-title-input').value = '';
+            document.getElementById('new-checklist-title-input').focus();
+        }
+
+        function cancelChecklistTitle() {
+            document.getElementById('checklist-title-create').classList.add('hidden');
+            document.getElementById('btn-add-checklist').classList.remove('hidden');
+        }
+
+        async function createChecklist() {
+            const title = document.getElementById('new-checklist-title-input').value.trim();
+            if (!title || !checklistTaskId) return;
+            try {
+                await apiPost(`/tasks/${checklistTaskId}/checklist/title`, { checklist_title: title });
+                checklistData.checklist_title = title;
+                renderChecklist();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        function showChecklistTitleEdit() {
+            const edit = document.getElementById('checklist-title-edit');
+            edit.classList.remove('hidden');
+            const input = document.getElementById('checklist-title-input');
+            input.value = checklistData.checklist_title;
+            input.focus();
+            input.select();
+        }
+
+        async function saveChecklistTitle() {
+            const title = document.getElementById('checklist-title-input').value.trim();
+            if (!title || !checklistTaskId) return;
+            try {
+                await apiPost(`/tasks/${checklistTaskId}/checklist/title`, { checklist_title: title });
+                checklistData.checklist_title = title;
+                document.getElementById('checklist-title-edit').classList.add('hidden');
+                renderChecklist();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        function showAddChecklistItemInput(parentId, btnEl) {
+            // Remove any existing inline add forms
+            document.querySelectorAll('.checklist-inline-add').forEach(el => el.remove());
+
+            const indent = parentId ? ((getParentDepth(parentId) + 1) * 20) : 0;
+            const placeholder = parentId ? 'Подпункт...' : 'Новый пункт...';
+
+            const formDiv = document.createElement('div');
+            formDiv.className = 'checklist-inline-add';
+            formDiv.style.paddingLeft = indent + 'px';
+            formDiv.dataset.parentId = parentId || '';
+            formDiv.innerHTML = `
+                <div class="flex items-start gap-1 mt-1">
+                    <span class="text-emerald-400 text-lg leading-8">↳</span>
+                    <div class="flex-1">
+                        <input type="text" class="checklist-new-input w-full px-2 py-1 bg-dark-300 border border-blue-500/50 rounded text-sm text-white"
+                            maxlength="500" placeholder="${placeholder}" autofocus>
+                        <div class="flex gap-1 mt-1">
+                            <button onclick="saveChecklistItem()" class="text-emerald-400 text-xl hover:text-emerald-300 leading-none">✓</button>
+                            <button onclick="cancelChecklistItem()" class="text-red-400 text-xl hover:text-red-300 leading-none">✗</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Insert after the clicked item's row, or at the end of tree if root-level
+            if (parentId && btnEl) {
+                const itemRow = btnEl.closest('.checklist-item');
+                if (itemRow) {
+                    // Insert after the last descendant of this item
+                    let lastDesc = itemRow;
+                    let next = itemRow.nextElementSibling;
+                    while (next && next.classList && next.classList.contains('checklist-item')) {
+                        const childDepth = parseInt(next.dataset.depth || 0);
+                        const parentDepth = parseInt(itemRow.dataset.depth || 0);
+                        if (childDepth <= parentDepth) break;
+                        lastDesc = next;
+                        next = next.nextElementSibling;
+                    }
+                    lastDesc.after(formDiv);
+                }
+            } else {
+                document.getElementById('checklist-tree').appendChild(formDiv);
+            }
+
+            const input = formDiv.querySelector('.checklist-new-input');
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); saveChecklistItem(); }
+                if (e.key === 'Escape') cancelChecklistItem();
+            });
+            input.focus();
+        }
+
+        function getParentDepth(parentId) {
+            const el = document.querySelector(`.checklist-item[data-id="${parentId}"]`);
+            return el ? parseInt(el.dataset.depth || 0) : -1;
+        }
+
+        function cancelChecklistItem() {
+            document.querySelectorAll('.checklist-inline-add').forEach(el => el.remove());
+        }
+
+        async function saveChecklistItem() {
+            const formDiv = document.querySelector('.checklist-inline-add');
+            if (!formDiv) return;
+            const input = formDiv.querySelector('.checklist-new-input');
+            const title = input.value.trim();
+            if (!title || !checklistTaskId) return;
+            const parentId = formDiv.dataset.parentId || null;
+            const parsedParent = parentId ? parseInt(parentId) : null;
+            try {
+                await apiPost(`/tasks/${checklistTaskId}/checklist`, {
+                    parent_id: parsedParent,
+                    title: title
+                });
+                formDiv.remove();
+                await loadChecklist(checklistTaskId);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        async function toggleChecklistItem(itemId, done) {
+            try {
+                await apiPatch(`/tasks/${checklistTaskId}/checklist/${itemId}`, { done: done });
+                await loadChecklist(checklistTaskId);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        async function deleteChecklistItem(itemId) {
+            if (!confirm('Удалить этот пункт и все подпункты?')) return;
+            try {
+                await apiDelete(`/tasks/${checklistTaskId}/checklist/${itemId}`);
+                await loadChecklist(checklistTaskId);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        async function deleteChecklist() {
+            if (!confirm('Удалить весь список дел и все пункты?')) return;
+            try {
+                await apiDelete(`/tasks/${checklistTaskId}/checklist/all`);
+                checklistData = { title: '', items: [] };
+                renderChecklist();
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }
+
+        // ─── Load app version ───────────────────────────────────
+        async function loadAppVersion() {
+            try {
+                const res = await fetch(`/config`);
+                if (res.ok) {
+                    const cfg = await res.json();
+                    document.getElementById('app-version').textContent = `v${cfg.version}`;
+                }
+            } catch (e) {
+                document.getElementById('app-version').textContent = '';
+            }
+        }
+
+        // ─── Init ─────────────────────────────────────────────────
+        async function init() {
+            try {
+                await loadBoards();
+                await loadBoard();
+                await loadAppVersion();
+                connectWebSocket();
+            } catch (err) {
+                console.error('Init error:', err);
+                showToast('Ошибка загрузки данных', 'error');
+            }
+        }
+
+        // Уменьшил автообновление до 60с (WebSocket обновляет мгновенно)
+        setInterval(() => { loadBoard(); loadBoards(); }, 60000);
+
+        init();
+    </script>
+</body>
+</html>

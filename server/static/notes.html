@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заметки — todo-ai</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 100: '#1E293B', 200: '#162032', 300: '#0F172A', 400: '#0A0F1A' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .note-card { transition: all 0.2s ease; }
+        .note-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0F172A; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-dark-300 via-dark-200 to-dark-400 text-gray-200 min-h-screen">
+
+    <!-- Header -->
+    <div class="px-6 py-3 border-b border-gray-700/30 bg-dark-300/50 backdrop-blur-sm flex items-center justify-between" style="height:52px;">
+        <div class="flex items-center gap-4">
+            <a href="/" class="font-bold text-blue-400 tracking-wider hover:text-blue-300 transition-colors" style="font-family:'Courier New',monospace;font-size:1.1rem;">TODO_AI</a>
+            <span class="text-gray-600">/</span>
+            <span class="text-gray-400 text-sm">Заметки</span>
+        </div>
+        <button onclick="openNoteModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 rounded-lg text-xs font-medium transition-all">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Новая заметка
+        </button>
+    </div>
+
+    <!-- Notes grid -->
+    <div class="px-6 py-6">
+        <div id="notes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        </div>
+        <div id="notes-empty" class="hidden flex flex-col items-center justify-center py-20 text-gray-600">
+            <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="text-sm">Заметок пока нет</p>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="note-overlay" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center" onclick="closeNoteModal()">
+        <div class="bg-dark-200 border border-gray-600/50 rounded-xl shadow-2xl p-6 w-[500px] max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+            <h3 id="note-modal-title" class="text-lg font-semibold text-white mb-4">Новая заметка</h3>
+            <input type="hidden" id="note-id">
+            <input type="text" id="note-title-input" maxlength="100"
+                class="w-full px-3 py-2 bg-dark-300 border border-gray-600 rounded-lg text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none mb-3"
+                placeholder="Заголовок заметки...">
+            <textarea id="note-body-input" rows="10"
+                class="w-full px-3 py-2 bg-dark-300 border border-gray-600 rounded-lg text-sm text-white resize-none focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Содержимое заметки..."></textarea>
+            <!-- Color picker -->
+            <div class="flex items-center gap-2 mt-3">
+                <span class="text-xs text-gray-500">Цвет:</span>
+                <div class="flex gap-1.5" id="note-colors">
+                    <button data-color="blue" class="w-6 h-6 rounded-full bg-blue-500/30 border-2 border-blue-400 hover:scale-110 transition-transform"></button>
+                    <button data-color="emerald" class="w-6 h-6 rounded-full bg-emerald-500/30 border-2 border-transparent hover:scale-110 transition-transform"></button>
+                    <button data-color="purple" class="w-6 h-6 rounded-full bg-purple-500/30 border-2 border-transparent hover:scale-110 transition-transform"></button>
+                    <button data-color="amber" class="w-6 h-6 rounded-full bg-amber-500/30 border-2 border-transparent hover:scale-110 transition-transform"></button>
+                    <button data-color="rose" class="w-6 h-6 rounded-full bg-rose-500/30 border-2 border-transparent hover:scale-110 transition-transform"></button>
+                    <button data-color="cyan" class="w-6 h-6 rounded-full bg-cyan-500/30 border-2 border-transparent hover:scale-110 transition-transform"></button>
+                </div>
+            </div>
+            <div class="flex justify-between mt-5">
+                <button id="btn-note-delete" onclick="deleteNote()" class="hidden px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors text-sm">Удалить</button>
+                <div class="flex gap-3 ml-auto">
+                    <button onclick="closeNoteModal()" class="px-4 py-2 bg-dark-300 hover:bg-dark-100 text-gray-400 rounded-lg transition-colors text-sm">Отмена</button>
+                    <button onclick="saveNote()" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 rounded-lg font-medium transition-all text-sm">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        const NOTE_COLORS = {
+            blue: 'from-blue-500/10 to-blue-600/10 border-blue-500/30',
+            emerald: 'from-emerald-500/10 to-emerald-600/10 border-emerald-500/30',
+            purple: 'from-purple-500/10 to-purple-600/10 border-purple-500/30',
+            amber: 'from-amber-500/10 to-amber-600/10 border-amber-500/30',
+            rose: 'from-rose-500/10 to-rose-600/10 border-rose-500/30',
+            cyan: 'from-cyan-500/10 to-cyan-600/10 border-cyan-500/30',
+        };
+        const NOTE_COLOR_DOTS = {
+            blue: 'bg-blue-400', emerald: 'bg-emerald-400', purple: 'bg-purple-400',
+            amber: 'bg-amber-400', rose: 'bg-rose-400', cyan: 'bg-cyan-400',
+        };
+        let notes = [];
+        let selectedColor = 'blue';
+
+        async function loadNotes() {
+            try {
+                const res = await fetch(`${API_BASE}/notes`);
+                if (!res.ok) throw new Error('Failed to load notes');
+                const data = await res.json();
+                notes = data.notes || [];
+                renderNotes();
+            } catch (e) {
+                console.error('Load notes error:', e);
+            }
+        }
+
+        function renderNotes() {
+            const grid = document.getElementById('notes-grid');
+            const empty = document.getElementById('notes-empty');
+            if (notes.length === 0) {
+                grid.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
+            }
+            grid.classList.remove('hidden');
+            empty.classList.add('hidden');
+            grid.innerHTML = notes.map(note => {
+                const colorClass = NOTE_COLORS[note.color] || NOTE_COLORS.blue;
+                const dotClass = NOTE_COLOR_DOTS[note.color] || NOTE_COLOR_DOTS.blue;
+                const date = new Date(note.updated_at || note.created_at).toLocaleDateString('ru', { day:'2-digit', month:'short', year:'numeric' });
+                return `
+                <div class="note-card bg-gradient-to-br ${colorClass} border rounded-xl p-4 cursor-pointer" onclick="openNoteModal(${note.id})">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full ${dotClass}"></div>
+                            <span class="text-xs text-gray-600">${date}</span>
+                        </div>
+                        <button onclick="event.stopPropagation(); deleteNoteById(${note.id})" class="text-gray-600 hover:text-red-400 transition-colors" title="Удалить">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </div>
+                    <h4 class="text-sm font-medium text-gray-200 mb-1">${escapeHtml(note.title)}</h4>
+                    <p class="text-xs text-gray-500 line-clamp-3 whitespace-pre-wrap">${escapeHtml(note.body)}</p>
+                </div>`;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function openNoteModal(id) {
+            document.getElementById('note-overlay').classList.remove('hidden');
+            document.getElementById('btn-note-delete').classList.add('hidden');
+            if (id) {
+                const note = notes.find(n => n.id === id);
+                if (!note) return;
+                document.getElementById('note-modal-title').textContent = 'Редактировать заметку';
+                document.getElementById('note-id').value = note.id;
+                document.getElementById('note-title-input').value = note.title;
+                document.getElementById('note-body-input').value = note.body;
+                selectedColor = note.color || 'blue';
+                document.getElementById('btn-note-delete').classList.remove('hidden');
+            } else {
+                document.getElementById('note-modal-title').textContent = 'Новая заметка';
+                document.getElementById('note-id').value = '';
+                document.getElementById('note-title-input').value = '';
+                document.getElementById('note-body-input').value = '';
+                selectedColor = 'blue';
+            }
+            updateColorSelection();
+        }
+
+        function closeNoteModal() {
+            document.getElementById('note-overlay').classList.add('hidden');
+        }
+
+        function updateColorSelection() {
+            document.querySelectorAll('#note-colors button').forEach(btn => {
+                btn.classList.toggle('border-transparent', btn.dataset.color !== selectedColor);
+                btn.classList.toggle('scale-110', btn.dataset.color === selectedColor);
+            });
+        }
+
+        document.querySelectorAll('#note-colors button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectedColor = btn.dataset.color;
+                updateColorSelection();
+            });
+        });
+
+        async function saveNote() {
+            const id = document.getElementById('note-id').value;
+            const title = document.getElementById('note-title-input').value.trim();
+            const body = document.getElementById('note-body-input').value.trim();
+            if (!title) { alert('Введите заголовок'); return; }
+            
+            const payload = { title, body, color: selectedColor };
+            try {
+                if (id) {
+                    await fetch(`${API_BASE}/notes/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    await fetch(`${API_BASE}/notes`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                await loadNotes();
+                closeNoteModal();
+            } catch (e) {
+                alert('Ошибка сохранения: ' + e.message);
+            }
+        }
+
+        async function deleteNote() {
+            const id = document.getElementById('note-id').value;
+            if (!id || !confirm('Удалить заметку?')) return;
+            try {
+                await fetch(`${API_BASE}/notes/${id}`, { method: 'DELETE' });
+                await loadNotes();
+                closeNoteModal();
+            } catch (e) {
+                alert('Ошибка удаления: ' + e.message);
+            }
+        }
+
+        async function deleteNoteById(id) {
+            if (!confirm('Удалить заметку?')) return;
+            try {
+                await fetch(`${API_BASE}/notes/${id}`, { method: 'DELETE' });
+                await loadNotes();
+            } catch (e) {
+                alert('Ошибка удаления: ' + e.message);
+            }
+        }
+
+        loadNotes();
+    </script>
+</body>
+</html>

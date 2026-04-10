@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changelog — todo-ai</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 100: '#1E293B', 200: '#162032', 300: '#0F172A', 400: '#0A0F1A' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .timeline-line { position: absolute; left: 20px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, #3B82F6, #8B5CF6, #06B6D4); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0F172A; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-dark-300 via-dark-200 to-dark-400 text-gray-200 min-h-screen">
+
+    <!-- Header -->
+    <div class="px-6 py-3 border-b border-gray-700/30 bg-dark-300/50 backdrop-blur-sm flex items-center justify-between" style="height:52px;">
+        <div class="flex items-center gap-4">
+            <a href="/" class="font-bold text-blue-400 tracking-wider hover:text-blue-300 transition-colors" style="font-family:'Courier New',monospace;font-size:1.1rem;">TODO_AI</a>
+            <span class="text-gray-600">/</span>
+            <span class="text-gray-400 text-sm">Changelog</span>
+        </div>
+        <span class="text-xs text-gray-600">v1.0.0</span>
+    </div>
+
+    <!-- Timeline -->
+    <div class="px-6 py-8 max-w-3xl mx-auto relative">
+        <div class="timeline-line"></div>
+        <div class="space-y-8 pl-12">
+            <!-- Entry -->
+            <div class="relative">
+                <div class="absolute -left-[44px] w-3 h-3 rounded-full bg-blue-500 border-4 border-dark-200 shadow-lg shadow-blue-500/20"></div>
+                <div class="bg-dark-200/60 backdrop-blur-sm border border-gray-700/30 rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full border border-blue-500/30">v1.0.0</span>
+                        <span class="text-xs text-gray-600">10 апреля 2026</span>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-200 mb-2">Мультидоски, сортировка и управление колонками</h3>
+                    <ul class="space-y-1.5 text-xs text-gray-400">
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Создание, переключение и удаление досок из UI</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Кнопки сортировки ↑↓ в каждой колонке (по умолчанию: ASC для рабочих, DESC для Готово/Архив)</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Стрелка → на карточках для быстрого перемещения вперёд</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Скрытие колонок по иконке 👁 — лейбл с возможностью вернуть</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Пагинация в колонке «Архив» (по 5 задач)</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Редизайн хедера: панели выбора доски и меню</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Страница «Заметки» — стикеры с цветовой маркировкой</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Страница «Changelog» — вертикальный таймлайн</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="relative">
+                <div class="absolute -left-[44px] w-3 h-3 rounded-full bg-purple-500 border-4 border-dark-200 shadow-lg shadow-purple-500/20"></div>
+                <div class="bg-dark-200/60 backdrop-blur-sm border border-gray-700/30 rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full border border-purple-500/30">v1.0.0</span>
+                        <span class="text-xs text-gray-600">9 апреля 2026</span>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-200 mb-2">Первый релиз</h3>
+                    <ul class="space-y-1.5 text-xs text-gray-400">
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Kanban-доска с 7 колонками</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Drag-and-drop задач между колонками</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Панель задач с описанием, контекстом AI, чеклистом</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> MCP API для AI-агентов (stdin/stdout + HTTP)</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> WebSocket для realtime обновлений</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> SQLite хранилище задач</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="relative">
+                <div class="absolute -left-[44px] w-3 h-3 rounded-full bg-cyan-500 border-4 border-dark-200 shadow-lg shadow-cyan-500/20"></div>
+                <div class="bg-dark-200/60 backdrop-blur-sm border border-gray-700/30 rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs rounded-full border border-cyan-500/30">v0.1.0</span>
+                        <span class="text-xs text-gray-600">Апрель 2026</span>
+                    </div>
+                    <h3 class="text-sm font-semibold text-gray-200 mb-2">Прототип</h3>
+                    <ul class="space-y-1.5 text-xs text-gray-400">
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> Базовая структура Kanban</li>
+                        <li class="flex items-start gap-2"><span class="text-emerald-400 mt-0.5">+</span> MCP stdio интерфейс</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

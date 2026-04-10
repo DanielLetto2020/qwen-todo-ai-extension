@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки — todo-ai</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 100: '#1E293B', 200: '#162032', 300: '#0F172A', 400: '#0A0F1A' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-dark-300 via-dark-200 to-dark-400 text-gray-200 min-h-screen">
+
+    <!-- Header -->
+    <div class="px-6 py-3 border-b border-gray-700/30 bg-dark-300/50 backdrop-blur-sm flex items-center justify-between" style="height:52px;">
+        <div class="flex items-center gap-4">
+            <a href="/" class="font-bold text-blue-400 tracking-wider hover:text-blue-300 transition-colors" style="font-family:'Courier New',monospace;font-size:1.1rem;">TODO_AI</a>
+            <span class="text-gray-600">/</span>
+            <span class="text-gray-400 text-sm">Настройки</span>
+        </div>
+        <a href="/" class="flex items-center gap-2 px-3 py-1.5 bg-dark-300/60 border border-gray-600/40 rounded-lg text-xs text-gray-400 hover:text-white transition-all">
+            ← Назад к доске
+        </a>
+    </div>
+
+    <!-- Content -->
+    <div class="flex items-center justify-center h-[calc(100vh-52px)]">
+        <div class="text-center text-gray-600">
+            <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+            <p class="text-sm">Страница настроек в разработке</p>
+        </div>
+    </div>
+</body>
+</html>

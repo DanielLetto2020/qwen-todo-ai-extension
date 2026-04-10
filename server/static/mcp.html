@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Tools — todo-ai-orchestrator</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        code { background: #1E293B; padding: 2px 6px; border-radius: 4px; font-size: 0.875em; }
+        pre { background: #0F172A; padding: 16px; border-radius: 8px; overflow-x: auto; border: 1px solid #1E293B; }
+        pre code { background: none; padding: 0; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-[#0F172A] via-[#162032] to-[#0A0F1A] text-gray-200 min-h-screen">
+    <div class="max-w-4xl mx-auto px-6 py-12">
+        <div class="flex items-center gap-3 mb-8">
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">MCP инструменты</h1>
+                <p class="text-gray-500 text-sm">11 инструментов для AI-агентов</p>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <a href="/" class="text-blue-400 hover:text-blue-300 text-sm">Назад к Kanban-доске</a>
+        </div>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Endpoint</h2>
+            <pre><code>POST http://localhost:8167/api/mcp/tools/call</code></pre>
+            <p class="text-gray-500 text-sm mt-2">Body: <code class="text-emerald-400">{"name": "tool_name", "arguments": {...}}</code></p>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Задачи</h2>
+            <div class="space-y-4">
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">create_task</h3>
+                    <p class="text-gray-400 text-sm mb-2">Создать задачу в Бэклог-AI (status=1). Чеклист передаётся как JSON-объект.</p>
+                    <pre><code>{"title": "...", "description": "...", "context_ai": "...", "checklist": {"title": "План", "tasks": [{"title": "Шаг 1", "done": false, "children": []}]}}</code></pre>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">update_task</h3>
+                    <p class="text-gray-400 text-sm mb-2">Обновить поля задачи, включая чеклист.</p>
+                    <pre><code>{"task_id": 1, "title": "...", "checklist": {"title": "Новый", "tasks": []}}</code></pre>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">get_task</h3>
+                    <p class="text-gray-400 text-sm mb-2">Получить задачу по ID. Ответ включает полный чеклист с вложенностью.</p>
+                    <pre><code>{"task_id": 1}</code></pre>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">list_tasks</h3>
+                    <p class="text-gray-400 text-sm mb-2">Список задач с фильтром по статусу (0-6).</p>
+                    <pre><code>{"status": 2}</code></pre>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">delete_task</h3>
+                    <p class="text-gray-400 text-sm mb-2">Удалить задачу.</p>
+                    <pre><code>{"task_id": 1}</code></pre>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">write_to_notepad</h3>
+                    <p class="text-gray-400 text-sm mb-2">Добавить заметку в AI-блок задачи.</p>
+                    <pre><code>{"task_id": 1, "note": "Прогресс: ..."}</code></pre>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">append_log</h3>
+                    <p class="text-gray-400 text-sm mb-2">Добавить запись в лог задачи.</p>
+                    <pre><code>{"task_id": 1, "log_entry": "Выполнено: ..."}</code></pre>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">change_status</h3>
+                    <p class="text-gray-400 text-sm mb-2">Изменить статус задачи (переместить между колонками).</p>
+                    <pre><code>{"task_id": 1, "status": 5}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Управление</h2>
+            <div class="space-y-4">
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">todo_next</h3>
+                    <p class="text-gray-400 text-sm mb-2">Показать следующую задачу из "Сделать" (status=2). Только просмотр, без изменений.</p>
+                    <pre><code>{}</code></pre>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">todo_next_run</h3>
+                    <p class="text-gray-400 text-sm mb-2">Взять задачу из "Сделать" и переместить в "В работе" (status 2 -> 3). Возвращает полный объект задачи с чеклистом.</p>
+                    <pre><code>{}</code></pre>
+                </div>
+                <div class="p-4 bg-[#1E293B]/40 border border-gray-700/30 rounded-lg">
+                    <h3 class="text-emerald-400 font-mono text-sm mb-2">todo_list</h3>
+                    <p class="text-gray-400 text-sm mb-2">Показать задачи из "Бэклог-AI" (status=1). До 50 штук с кратким описанием.</p>
+                    <pre><code>{"limit": 50}</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Чеклист в задаче</h2>
+            <p class="text-gray-400 text-sm mb-2">Чеклист хранится как JSON-объект внутри задачи. Доступ через create_task/update_task/get_task. Отдельных MCP инструментов для чеклиста нет.</p>
+            <pre><code>{
+  "checklist": {
+    "title": "План работ",
+    "tasks": [
+      {
+        "title": "Настроить БД",
+        "done": false,
+        "children": [
+          {"title": "Создать таблицы", "done": true, "children": []}
+        ]
+      }
+    ]
+  }
+}</code></pre>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">WebSocket</h2>
+            <pre><code>ws://localhost:8167/ws</code></pre>
+            <p class="text-gray-400 text-sm mt-2">Мгновенные уведомления при изменении задач:</p>
+            <pre><code>{"type": "task_change", "action": "status_changed", "task_id": 1, "task": {...}}</code></pre>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">Статусы</h2>
+            <div class="space-y-2">
+                <div class="flex items-center gap-3 p-2 bg-[#1E293B]/40 rounded"><span class="text-sm w-40">0 — Бэклог</span><span class="text-xs text-gray-500">Только человек</span></div>
+                <div class="flex items-center gap-3 p-2 bg-[#1E293B]/40 rounded"><span class="text-sm w-40">1 — Бэклог-AI</span><span class="text-xs text-gray-500">Только AI</span></div>
+                <div class="flex items-center gap-3 p-2 bg-[#1E293B]/40 rounded"><span class="text-sm w-40">2 — Сделать</span><span class="text-xs text-gray-500">Любой</span></div>
+                <div class="flex items-center gap-3 p-2 bg-[#1E293B]/40 rounded"><span class="text-sm w-40">3 — В работе</span><span class="text-xs text-gray-500">Любой</span></div>
+                <div class="flex items-center gap-3 p-2 bg-[#1E293B]/40 rounded"><span class="text-sm w-40">4 — Требует внимания</span><span class="text-xs text-gray-500">Любой</span></div>
+                <div class="flex items-center gap-3 p-2 bg-[#1E293B]/40 rounded"><span class="text-sm w-40">5 — Готово</span><span class="text-xs text-gray-500">Любой</span></div>
+                <div class="flex items-center gap-3 p-2 bg-[#1E293B]/40 rounded"><span class="text-sm w-40">6 — Архив</span><span class="text-xs text-gray-500">Любой</span></div>
+            </div>
+        </section>
+
+        <footer class="mt-12 pt-8 border-t border-gray-700/30 text-center text-sm text-gray-600">
+            <p>todo-ai-orchestrator v1.0.0 • 11 MCP инструментов</p>
+        </footer>
+    </div>
+</body>
+</html>

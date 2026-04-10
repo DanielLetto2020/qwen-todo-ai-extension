@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DB Viewer — todo-ai</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 100: '#1E293B', 200: '#162032', 300: '#0F172A', 400: '#0A0F1A' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0F172A; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .table-row:hover { background: #1E293B; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-dark-300 via-dark-200 to-dark-400 text-gray-200 min-h-screen">
+
+    <!-- Header -->
+    <div class="px-6 py-3 border-b border-gray-700/30 bg-dark-300/50 backdrop-blur-sm flex items-center justify-between" style="height:52px;">
+        <div class="flex items-center gap-4">
+            <a href="/" class="font-bold text-blue-400 tracking-wider hover:text-blue-300 transition-colors" style="font-family:'Courier New',monospace;font-size:1.1rem;">TODO_AI</a>
+            <span class="text-gray-600">/</span>
+            <span class="text-gray-400 text-sm">DB Viewer</span>
+        </div>
+        <a href="/" class="flex items-center gap-2 px-3 py-1.5 bg-dark-300/60 border border-gray-600/40 rounded-lg text-xs text-gray-400 hover:text-white transition-all">
+            ← Назад к доске
+        </a>
+    </div>
+
+    <!-- Content -->
+    <div class="flex h-[calc(100vh-52px)]">
+        <!-- Sidebar: Tables list -->
+        <div class="w-64 border-r border-gray-700/30 bg-dark-300/30 flex-shrink-0 overflow-y-auto">
+            <div class="px-4 py-3 border-b border-gray-700/30">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Таблицы</h3>
+            </div>
+            <div id="tables-list" class="p-2 space-y-1">
+                <div class="text-center text-gray-600 text-xs py-8">Загрузка...</div>
+            </div>
+        </div>
+
+        <!-- Main: Table content -->
+        <div class="flex-1 overflow-auto p-6">
+            <div id="table-content">
+                <div class="flex flex-col items-center justify-center h-full text-gray-600">
+                    <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+                    <p class="text-sm">Выберите таблицу для просмотра</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tables = [];
+        let currentTable = null;
+
+        async function loadTables() {
+            try {
+                const res = await fetch('/api/db/tables');
+                if (!res.ok) throw new Error('Failed to load tables');
+                const data = await res.json();
+                tables = data.tables || [];
+                renderTablesList();
+            } catch (e) {
+                document.getElementById('tables-list').innerHTML = `<div class="text-center text-red-400 text-xs py-8">Ошибка: ${e.message}</div>`;
+            }
+        }
+
+        function renderTablesList() {
+            const list = document.getElementById('tables-list');
+            if (tables.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-600 text-xs py-8">Нет таблиц</div>';
+                return;
+            }
+            list.innerHTML = tables.map(t => `
+                <button onclick="loadTable('${t.name}')"
+                    class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all ${currentTable === t.name ? 'bg-blue-500/10 border border-blue-500/30 text-blue-400' : 'text-gray-400 hover:bg-dark-300 hover:text-white border border-transparent'}">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span class="truncate">${escapeHtml(t.name)}</span>
+                    </div>
+                    <span class="text-[10px] text-gray-600 ml-5">${t.row_count} строк</span>
+                </button>
+            `).join('');
+        }
+
+        async function loadTable(tableName) {
+            currentTable = tableName;
+            renderTablesList();
+            const content = document.getElementById('table-content');
+            content.innerHTML = '<div class="flex items-center justify-center py-12"><div class="text-gray-500 text-sm">Загрузка...</div></div>';
+            try {
+                const res = await fetch(`/api/db/table/${encodeURIComponent(tableName)}`);
+                if (!res.ok) throw new Error('Failed to load table');
+                const data = await res.json();
+                renderTableContent(data);
+            } catch (e) {
+                content.innerHTML = `<div class="text-center text-red-400 text-sm py-12">Ошибка: ${e.message}</div>`;
+            }
+        }
+
+        function renderTableContent(data) {
+            const content = document.getElementById('table-content');
+            if (!data.columns || data.columns.length === 0) {
+                content.innerHTML = '<div class="text-center text-gray-500 text-sm py-12">Пустая таблица</div>';
+                return;
+            }
+            const rows = data.rows || [];
+            content.innerHTML = `
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-white mono">${escapeHtml(data.table)}</h2>
+                        <p class="text-xs text-gray-500">${rows.length} строк · ${data.columns.length} колонок</p>
+                    </div>
+                    <span class="px-2 py-1 bg-dark-300/50 border border-gray-700/30 rounded text-[10px] text-gray-500 mono">read-only</span>
+                </div>
+                <div class="overflow-x-auto border border-gray-700/30 rounded-xl">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="border-b border-gray-700/50 bg-dark-300/50">
+                                <th class="text-left px-3 py-2 text-gray-500 font-medium w-10 mono">#</th>
+                                ${data.columns.map(c => `<th class="text-left px-3 py-2 text-gray-400 font-medium mono whitespace-nowrap">${escapeHtml(c)}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.length === 0 ? `<tr><td colspan="${data.columns.length + 1}" class="text-center text-gray-600 py-8">Нет данных</td></tr>` :
+                            rows.map((row, i) => `
+                                <tr class="table-row border-b border-gray-700/20 transition-colors">
+                                    <td class="px-3 py-2 text-gray-600 mono">${i + 1}</td>
+                                    ${data.columns.map(c => {
+                                        const val = row[c];
+                                        const display = val === null ? '<span class="text-gray-600 italic">null</span>' :
+                                            typeof val === 'object' ? `<span class="mono text-amber-400">${escapeHtml(JSON.stringify(val))}</span>` :
+                                            `<span class="mono text-gray-300">${escapeHtml(String(val))}</span>`;
+                                        return `<td class="px-3 py-2 max-w-[300px] truncate">${display}</td>`;
+                                    }).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        loadTables();
+    </script>
+</body>
+</html>

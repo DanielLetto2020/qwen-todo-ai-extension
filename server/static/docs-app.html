@@ -62,6 +62,7 @@
 
             <div class="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2 mt-4 px-2">Управление</div>
             <a href="#start-stop" class="toc-link block text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-700/20">Запуск и остановка</a>
+            <a href="#start-ui" class="toc-link block text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-700/20">Запуск UI из проекта</a>
             <a href="#multi-boards" class="toc-link block text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-700/20">Мультидоски</a>
             <a href="#ui-features" class="toc-link block text-xs text-gray-400 px-2 py-1 rounded hover:bg-gray-700/20">Возможности UI</a>
 
@@ -387,10 +388,51 @@ kill PID</code>
                 </div>
             </section>
 
-            <!-- ====== 8. МУЛЬТИДОСКИ ====== -->
+            <!-- ====== 8. ЗАПУСК UI ИЗ ПРОЕКТА ====== -->
+            <section id="start-ui" class="section-title">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-sm font-bold">8</span>
+                    Запуск UI из любого проекта
+                </h2>
+                <div class="bg-dark-200/60 border border-gray-700/30 rounded-xl p-6 space-y-4">
+                    <p class="text-sm text-gray-300">
+                        Команда <code class="text-blue-400">/todo-start-ui</code> позволяет запустить UI сервер и открыть документацию прямо из чата Qwen Code, не выходя из проекта.
+                    </p>
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-semibold text-white">Как это работает</h3>
+                        <ol class="space-y-2 text-sm text-gray-300 ml-4">
+                            <li><span class="text-cyan-400">1.</span> <strong>Проверяет</strong> запущен ли сервер на порту 8167 через <code class="text-purple-400">curl /health</code></li>
+                            <li><span class="text-cyan-400">2.</span> <strong>Запускает</strong> сервер если не работает (в фоновом режиме)</li>
+                            <li><span class="text-cyan-400">3.</span> <strong>Открывает</strong> документацию в браузере через Playwright:</li>
+                        </ol>
+                        <ul class="space-y-1 text-sm text-gray-300 ml-8">
+                            <li>▸ <a href="http://localhost:8167/" class="text-blue-400 underline">http://localhost:8167/</a> — Kanban-доска</li>
+                            <li>▸ <a href="http://localhost:8167/app-docs" class="text-blue-400 underline">http://localhost:8167/app-docs</a> — Документация приложения</li>
+                            <li>▸ <a href="http://localhost:8167/mcp-tools" class="text-blue-400 underline">http://localhost:8167/mcp-tools</a> — Справка по MCP API</li>
+                            <li>▸ <a href="http://localhost:8167/settings" class="text-blue-400 underline">http://localhost:8167/settings</a> — Настройки</li>
+                            <li>▸ <code class="text-purple-400">README.md</code> — показывает содержимое файла</li>
+                        </ul>
+                    </div>
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-semibold text-white">Использование</h3>
+                        <p class="text-xs text-gray-400">Просто введите команду в чате Qwen Code:</p>
+                        <div class="bg-dark-300/80 rounded-lg p-3 border border-gray-700/20">
+                            <code class="text-xs text-emerald-400">/todo-start-ui</code>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Работает из <strong>любого проекта</strong> — не нужно переходить в директорию расширения.</p>
+                    </div>
+                    <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                        <p class="text-xs text-emerald-300">
+                            <strong>Умный запуск:</strong> Если сервер уже запущен — команда НЕ перезапускает его, а просто открывает документацию. Если порт 8167 занят — сообщает об этом.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ====== 9. МУЛЬТИДОСКИ ====== -->
             <section id="multi-boards" class="section-title">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-400 text-sm font-bold">8</span>
+                    <span class="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-400 text-sm font-bold">9</span>
                     Мультидоски
                 </h2>
                 <div class="bg-dark-200/60 border border-gray-700/30 rounded-xl p-6 space-y-4">
@@ -426,10 +468,10 @@ kill PID</code>
                 </div>
             </section>
 
-            <!-- ====== 9. ВОЗМОЖНОСТИ UI ====== -->
+            <!-- ====== 10. ВОЗМОЖНОСТИ UI ====== -->
             <section id="ui-features" class="section-title">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center text-pink-400 text-sm font-bold">9</span>
+                    <span class="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center text-pink-400 text-sm font-bold">10</span>
                     Возможности UI
                 </h2>
                 <div class="space-y-4">
@@ -463,10 +505,10 @@ kill PID</code>
                 </div>
             </section>
 
-            <!-- ====== 10. КОМАНДЫ QWEN CODE ====== -->
+            <!-- ====== 11. КОМАНДЫ QWEN CODE ====== -->
             <section id="commands" class="section-title">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center text-sky-400 text-sm font-bold">10</span>
+                    <span class="w-8 h-8 rounded-lg bg-sky-500/20 flex items-center justify-center text-sky-400 text-sm font-bold">11</span>
                     Команды Qwen Code (слэш-команды)
                 </h2>
                 <div class="bg-dark-200/60 border border-gray-700/30 rounded-xl p-6 space-y-4">
@@ -498,8 +540,18 @@ kill PID</code>
                                 </tr>
                                 <tr>
                                     <td class="py-2 px-3"><code class="text-blue-400">/todo-next-run</code></td>
-                                    <td class="py-2 px-3">Взять следующую задачу из "Сделать" и переместить в "В работе" (статус 2 → 3).</td>
+                                    <td class="py-2 px-3">Взять следующую задачу из "Сделать", выполнить её и переместить в "Готово" (полный цикл).</td>
                                     <td class="py-2 px-3"><code class="text-gray-500">/todo-next-run</code></td>
+                                </tr>
+                                <tr class="border-b border-gray-700/20">
+                                    <td class="py-2 px-3"><code class="text-blue-400">/todo-config</code></td>
+                                    <td class="py-2 px-3">Проверить или создать `.qwen/todo-ai.json` текущего проекта.</td>
+                                    <td class="py-2 px-3"><code class="text-gray-500">/todo-config</code></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2 px-3"><code class="text-blue-400">/todo-start-ui</code></td>
+                                    <td class="py-2 px-3">Проверить запущен ли UI сервер, запустить если нет, и открыть документацию в браузере.</td>
+                                    <td class="py-2 px-3"><code class="text-gray-500">/todo-start-ui</code></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -512,10 +564,10 @@ kill PID</code>
                 </div>
             </section>
 
-            <!-- ====== 11. MCP ИНСТРУМЕНТЫ ====== -->
+            <!-- ====== 12. MCP ИНСТРУМЕНТЫ ====== -->
             <section id="mcp-tools" class="section-title">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 text-sm font-bold">11</span>
+                    <span class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 text-sm font-bold">12</span>
                     MCP инструменты для AI-агентов
                 </h2>
                 <div class="bg-dark-200/60 border border-gray-700/30 rounded-xl p-6 space-y-4">
@@ -628,10 +680,10 @@ kill PID</code>
                 </div>
             </section>
 
-            <!-- ====== 12. ПРАВИЛА ДЛЯ AI ====== -->
+            <!-- ====== 13. ПРАВИЛА ДЛЯ AI ====== -->
             <section id="ai-rules" class="section-title">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 text-sm font-bold">12</span>
+                    <span class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 text-sm font-bold">13</span>
                     Правила для AI-агента
                 </h2>
                 <div class="bg-dark-200/60 border border-gray-700/30 rounded-xl p-6">
@@ -670,10 +722,10 @@ kill PID</code>
                 </div>
             </section>
 
-            <!-- ====== 13. СКИЛЫ ====== -->
+            <!-- ====== 14. СКИЛЫ ====== -->
             <section id="skills" class="section-title">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center text-teal-400 text-sm font-bold">13</span>
+                    <span class="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center text-teal-400 text-sm font-bold">14</span>
                     Скилы (Skills)
                 </h2>
                 <div class="bg-dark-200/60 border border-gray-700/30 rounded-xl p-6 space-y-4">
@@ -697,10 +749,10 @@ kill PID</code>
                 </div>
             </section>
 
-            <!-- ====== 14. ПОЛНЫЙ ЦИКЛ РАБОТЫ ====== -->
+            <!-- ====== 15. ПОЛНЫЙ ЦИКЛ РАБОТЫ ====== -->
             <section id="workflow" class="section-title">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-sm font-bold">14</span>
+                    <span class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-sm font-bold">15</span>
                     Полный цикл работы с задачей
                 </h2>
                 <div class="bg-dark-200/60 border border-gray-700/30 rounded-xl p-6 space-y-4">
@@ -784,10 +836,10 @@ kill PID</code>
                 </div>
             </section>
 
-            <!-- ====== 15. ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ ====== -->
+            <!-- ====== 16. ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ ====== -->
             <section id="examples" class="section-title">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 text-sm font-bold">15</span>
+                    <span class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 text-sm font-bold">16</span>
                     Примеры использования
                 </h2>
                 <div class="space-y-4">

@@ -131,6 +131,47 @@ def init_db():
                     (row["id"], row["name"], row["status_code"], row["color"], row["board"])
                 )
 
+        # Миграция: если UNIQUE на tasks только на id_task (без board) — пересоздаём таблицу
+        # Проверяем: если есть колонка board, но UNIQUE не на (id_task, board)
+        try:
+            # Проверяем схему tasks
+            schema = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='tasks'").fetchone()
+            if schema and "UNIQUE(id_task, board)" not in schema["sql"]:
+                # Пересоздаём tasks с правильным UNIQUE
+                existing_tasks = conn.execute(
+                    "SELECT id_task, title, description, context_ai, status, type, priority, log, ai_notepad, checklist, board, created_at, updated_at FROM tasks"
+                ).fetchall()
+                conn.execute("DROP TABLE tasks")
+                conn.execute("""
+                    CREATE TABLE tasks (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        id_task INTEGER NOT NULL,
+                        title VARCHAR(100) NOT NULL,
+                        description TEXT DEFAULT '',
+                        context_ai TEXT DEFAULT '',
+                        status INTEGER NOT NULL DEFAULT 0,
+                        type VARCHAR(50) DEFAULT 'base',
+                        priority INTEGER NOT NULL DEFAULT 0,
+                        log TEXT DEFAULT '[]',
+                        ai_notepad TEXT DEFAULT '',
+                        checklist TEXT DEFAULT '{}',
+                        board VARCHAR(100) NOT NULL DEFAULT 'main',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(id_task, board)
+                    )
+                """)
+                for task in existing_tasks:
+                    conn.execute(
+                        """INSERT INTO tasks (id_task, title, description, context_ai, status, type, priority, log, ai_notepad, checklist, board, created_at, updated_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (task["id_task"], task["title"], task["description"], task["context_ai"],
+                         task["status"], task["type"], task["priority"], task["log"], task["ai_notepad"],
+                         task["checklist"], task["board"], task["created_at"], task["updated_at"])
+                    )
+        except Exception:
+            pass  # Если что-то пошло не так, пробуем продолжить
+
         # 4. Миграция: создаём доску 'main' если её нет
         conn.execute("INSERT OR IGNORE INTO boards (name) VALUES ('main')")
 

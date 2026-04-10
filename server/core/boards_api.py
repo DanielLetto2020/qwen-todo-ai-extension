@@ -45,8 +45,6 @@ def get_active_board():
 @router.put("/active", summary="Переключить активную доску")
 def set_active_board(body: dict = Body(...)):
     board_name = _validate_board_name(body.get("board", ""))
-    if board_name == "main":
-        raise HTTPException(400, "Доска 'main' является системной и не может быть переименована")
     # Если доски ещё нет — создаём
     existing = [b["name"] for b in get_all_boards()]
     if board_name not in existing:

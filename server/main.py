@@ -299,6 +299,19 @@ def handle_tool_call(name: str, arguments: dict) -> dict:
 async def run_stdio_mcp():
     """JSON-RPC сервер через stdin/stdout."""
     init_db()
+    
+    # Автозапуск UI сервера если не работает
+    try:
+        from core.ui_manager import ensure_ui_running, get_ui_url
+        from core.config import get_default_port
+        
+        port = get_default_port()
+        if ensure_ui_running(port):
+            # Отправляем информационное сообщение в stderr (не ломает JSON-RPC)
+            print(f"[UI Manager] Todo AI UI доступен на {get_ui_url(port)}", file=sys.stderr)
+    except Exception as e:
+        print(f"[UI Manager] Ошибка проверки UI: {e}", file=sys.stderr)
+    
     board = get_board_name()
     # Отправляем initialization ответ
     print(json.dumps({"jsonrpc": "2.0", "method": "initialize", "result": {

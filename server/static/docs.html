@@ -29,10 +29,26 @@
         </div>
 
         <section class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-4">🚀 Автозапуск UI сервера</h2>
+            <p class="text-gray-400 text-sm mb-3">UI сервер запускается автоматически при каждой загрузке MCP сессии:</p>
+            <ol class="space-y-2 text-sm text-gray-300 ml-4 mb-4">
+                <li><span class="text-green-400">1.</span> <strong>Проверяет</strong> — работает ли UI на порту 8167</li>
+                <li><span class="text-green-400">2.</span> <strong>Если нет</strong> — запускает как независимый процесс</li>
+                <li><span class="text-green-400">3.</span> <strong>UI живёт</strong> после выхода из сессии Qwen Code</li>
+            </ol>
+            <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg mb-4">
+                <p class="text-xs text-emerald-300">
+                    <strong>Не нужно запускать вручную!</strong> Просто откройте <a href="http://localhost:8167" class="underline text-blue-400">http://localhost:8167</a> в браузере.
+                </p>
+            </div>
+            <p class="text-gray-500 text-sm">Ручной запуск (если нужен): <code class="text-blue-400">cd ~/.qwen/extensions/todo-ai && python -m server.main</code></p>
+            <p class="text-gray-500 text-sm mt-1">Свой порт: <code class="text-blue-400">python -m server.main --port 9000</code></p>
+        </section>
+
+        <section class="mb-8">
             <h2 class="text-xl font-bold text-white mb-4">Быстрый старт</h2>
-            <pre><code>podman compose up -d</code></pre>
-            <p class="text-gray-500 mt-2 text-sm">Доступно на <code class="text-blue-400">http://localhost:8167</code></p>
-            <p class="text-gray-500 text-sm mt-1">Свой порт: <code class="text-blue-400">APP_PORT=9000 podman compose up -d</code></p>
+            <pre><code># UI запускается автоматически при старте MCP сессии
+# Просто откройте http://localhost:8167 в браузере</code></pre>
         </section>
 
         <section class="mb-8">

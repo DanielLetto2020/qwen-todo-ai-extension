@@ -1,9 +1,19 @@
 import os
 import json
 
+from urllib.parse import urlparse, unquote
+
 # Путь к БД (из env или дефолт)
-DATABASE_PATH = os.environ.get("DATABASE_URL", "").replace("sqlite:///", "")
-if not DATABASE_PATH:
+_db_url = os.environ.get("DATABASE_URL", "")
+
+if _db_url.startswith("sqlite://"):
+    parsed = urlparse(_db_url)
+    DATABASE_PATH = unquote(parsed.path)
+    if not DATABASE_PATH:
+        DATABASE_PATH = ":memory:"
+elif _db_url:
+    DATABASE_PATH = _db_url
+else:
     ext_path = os.environ.get("EXTENSION_PATH", os.path.expanduser("~/.qwen/extensions/todo-ai"))
     DATABASE_PATH = os.path.join(ext_path, "data", "tasks.db")
 

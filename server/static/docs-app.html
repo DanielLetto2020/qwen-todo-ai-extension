@@ -109,6 +109,7 @@
                             <li><span class="text-blue-400 mt-0.5">▸</span> Делегировать задачи AI-агенту — он сам берёт, выполняет и отчитывается</li>
                             <li><span class="text-blue-400 mt-0.5">▸</span> Вести историю всех изменений (кто, когда, что сделал)</li>
                             <li><span class="text-blue-400 mt-0.5">▸</span> Управлять несколькими проектами через разные доски</li>
+                            <li><span class="text-emerald-400 mt-0.5">▸</span> <strong>UI сервер запускается автоматически</strong> — не нужно запускать вручную при каждой сессии</li>
                         </ul>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -146,7 +147,7 @@
                         <div class="flex items-start gap-3">
                             <span class="badge bg-emerald-500/20 text-emerald-400 mt-0.5">FastAPI HTTP</span>
                             <div>
-                                <p class="text-xs text-gray-300">Веб-сервер с UI в браузере + REST API. Запускается отдельно для визуального управления доской.</p>
+                                <p class="text-xs text-gray-300">Веб-сервер с UI в браузере + REST API. <strong class="text-emerald-400">Запускается автоматически</strong> при старте MCP сессии как независимый процесс и продолжает работать после выхода из сессии.</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3">
@@ -344,23 +345,57 @@ qwen extensions enable todo-ai</code>
                 </div>
             </section>
 
-            <!-- ====== 7. ЗАПУСК И ОСТАНОВКА ====== -->
+            <!-- ====== 7. АВТОЗАПУСК UI ====== -->
             <section id="start-stop" class="section-title">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
                     <span class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 text-sm font-bold">7</span>
-                    Запуск и остановка
+                    Автозапуск UI сервера
                 </h2>
                 <div class="bg-dark-200/60 border border-gray-700/30 rounded-xl p-6 space-y-4">
                     <div class="space-y-3">
-                        <h3 class="text-sm font-semibold text-white">MCP stdio (основной режим)</h3>
-                        <p class="text-xs text-gray-400">
-                            <strong>Не требует ручного запуска!</strong> MCP сервер в режиме stdio запускается автоматически Qwen Code при каждом обращении к инструменту.
-                            Это прописано в <code class="text-purple-400">qwen-extension.json</code> расширения. Просто используйте команды <code class="text-blue-400">/todo</code>, <code class="text-blue-400">/todo-next</code> и т.д.
+                        <h3 class="text-sm font-semibold text-white">🚀 Автоматический запуск при старте сессии</h3>
+                        <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                            <p class="text-xs text-emerald-300 mb-2">
+                                <strong>UI сервер запускается автоматически</strong> при каждой загрузке MCP сессии. Вам больше не нужно запускать его вручную!
+                            </p>
+                        </div>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            Когда Qwen Code запускает MCP сервер (при начале любой сессии), модуль <code class="text-purple-400">ui_manager.py</code>:
                         </p>
+                        <ol class="space-y-2 text-sm text-gray-300 ml-4">
+                            <li><span class="text-green-400">1.</span> <strong>Проверяет</strong> — работает ли UI сервер на порту 8167 (через <code class="text-purple-400">GET /health</code>)</li>
+                            <li><span class="text-green-400">2.</span> <strong>Если не работает</strong> — запускает как независимый процесс (<code class="text-purple-400">start_new_session=True</code>)</li>
+                            <li><span class="text-green-400">3.</span> <strong>Ждёт запуска</strong> — проверяет доступность до 3 раз с интервалом 1 секунда</li>
+                        </ol>
                     </div>
+
                     <div class="space-y-3">
-                        <h3 class="text-sm font-semibold text-white">HTTP UI (веб-интерфейс)</h3>
-                        <p class="text-xs text-gray-400">Для запуска визуальной Kanban-доски в браузере:</p>
+                        <h3 class="text-sm font-semibold text-white">Почему UI не падает при выходе из сессии?</h3>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            UI сервер запускается как <strong>полностью независимый процесс</strong>:
+                        </p>
+                        <ul class="space-y-1.5 text-xs text-gray-300 ml-4">
+                            <li><span class="text-purple-400">▸</span> Linux/Mac: <code class="text-purple-400">start_new_session=True</code> — создаёт новую сессию процесса, отвязанную от родителя</li>
+                            <li><span class="text-purple-400">▸</span> Windows: <code class="text-purple-400">DETACHED_PROCESS</code> — откреплённый процесс</li>
+                            <li><span class="text-purple-400">▸</span> При завершении MCP сессии — UI продолжает работать</li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-semibold text-white">Несколько сессий Qwen — один UI</h3>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            Если вы работаете в нескольких проектах одновременно:
+                        </p>
+                        <ul class="space-y-1.5 text-xs text-gray-300 ml-4">
+                            <li><span class="text-blue-400">▸</span> Первая сессия запускает UI сервер</li>
+                            <li><span class="text-blue-400">▸</span> Последующие сессии видят что UI уже работает и <strong>не запускают дубликат</strong></li>
+                            <li><span class="text-blue-400">▸</span> Все сессии работают с одной базой данных через общий UI</li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-semibold text-white">Ручной запуск UI (если нужно)</h3>
+                        <p class="text-xs text-gray-400">Для запуска визуальной Kanban-доски вручную:</p>
                         <div class="bg-dark-300/80 rounded-lg p-3 border border-gray-700/20">
 <code class="text-xs text-emerald-400">cd ~/.qwen/extensions/todo-ai
 python -m server.main              # порт 8167
@@ -369,9 +404,10 @@ python -m server.main --port 9000  # свой порт</code>
                         <p class="text-xs text-gray-400 mt-2">Или через env: <code class="text-blue-400">TODO_AI_APP_PORT=9000 python -m server.main</code></p>
                         <p class="text-xs text-gray-400 mt-2">Откройте в браузере: <a href="http://localhost:8167" class="text-blue-400 underline">http://localhost:8167</a></p>
                     </div>
+
                     <div class="space-y-3">
                         <h3 class="text-sm font-semibold text-white">Остановка UI сервера</h3>
-                        <p class="text-xs text-gray-400">Нажмите <code class="text-purple-400">Ctrl+C</code> в терминале где запущен сервер. Или найдите и убейте процесс:</p>
+                        <p class="text-xs text-gray-400">Найдите и убейте процесс:</p>
                         <div class="bg-dark-300/80 rounded-lg p-3 border border-gray-700/20">
 <code class="text-xs text-emerald-400"># Найти процесс
 ps aux | grep "server.main" | grep -v grep
@@ -380,9 +416,10 @@ ps aux | grep "server.main" | grep -v grep
 kill PID</code>
                         </div>
                     </div>
+
                     <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                         <p class="text-xs text-blue-300">
-                            <strong>Совет:</strong> Запустите UI сервер в фоновом режиме (<code class="text-purple-400">&</code> в конце команды или <code class="text-purple-400">nohup</code>), чтобы он работал постоянно.
+                            <strong>Совет:</strong> UI сервер работает постоянно — не нужно его запускать перед каждой командой. Просто откройте <a href="http://localhost:8167" class="text-blue-400 underline">http://localhost:8167</a> в браузере.
                         </p>
                     </div>
                 </div>
@@ -392,14 +429,15 @@ kill PID</code>
             <section id="start-ui" class="section-title">
                 <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
                     <span class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-sm font-bold">8</span>
-                    Запуск UI из любого проекта
+                    Команда /todo-start-ui
                 </h2>
                 <div class="bg-dark-200/60 border border-gray-700/30 rounded-xl p-6 space-y-4">
                     <p class="text-sm text-gray-300">
-                        Команда <code class="text-blue-400">/todo-start-ui</code> позволяет запустить UI сервер и открыть документацию прямо из чата Qwen Code, не выходя из проекта.
+                        > ℹ️ <strong>Примечание:</strong> UI сервер теперь запускается автоматически при старте MCP сессии (см. раздел 7).
+                        Команда <code class="text-blue-400">/todo-start-ui</code> остаётся для ручной проверки и открытия документации в браузере.
                     </p>
                     <div class="space-y-3">
-                        <h3 class="text-sm font-semibold text-white">Как это работает</h3>
+                        <h3 class="text-sm font-semibold text-white">Что делает команда</h3>
                         <ol class="space-y-2 text-sm text-gray-300 ml-4">
                             <li><span class="text-cyan-400">1.</span> <strong>Проверяет</strong> запущен ли сервер на порту 8167 через <code class="text-purple-400">curl /health</code></li>
                             <li><span class="text-cyan-400">2.</span> <strong>Запускает</strong> сервер если не работает (в фоновом режиме)</li>
